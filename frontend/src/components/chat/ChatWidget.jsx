@@ -41,12 +41,12 @@ const ChatWidget = () => {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
-      const res = await chatService.sendMessage(text);
-      if (res?.botReply) {
-        setMessages((prev) => [...prev, res.botReply]);
+      const updatedList = await chatService.sendMessage(text);
+      if (Array.isArray(updatedList) && updatedList.length > 0) {
+        setMessages(updatedList);
       }
-    } catch (err) {
-      // fallback
+    } catch {
+      // ServerStatusIndicator alerts on db or network errors
     } finally {
       setIsTyping(false);
     }

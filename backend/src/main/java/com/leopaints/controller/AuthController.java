@@ -41,6 +41,21 @@ public class AuthController {
         ));
     }
 
+    @PostMapping("/resend-otp")
+    @Operation(summary = "Resend OTP to mobile number with cooldown enforcement")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> resendOtp(@Valid @RequestBody SendOtpRequest request) {
+        LocalDateTime expiresAt = authService.resendOtp(request.getPhone());
+        return ResponseEntity.ok(ApiResponse.success(
+                Map.of(
+                        "phone", request.getPhone(),
+                        "expiresAt", expiresAt,
+                        "cooldownSeconds", 30,
+                        "message", "New OTP sent successfully"
+                ),
+                "New OTP sent successfully"
+        ));
+    }
+
     @PostMapping("/verify-otp")
     @Operation(summary = "Verify OTP and login/register")
     public ResponseEntity<ApiResponse<AuthResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {

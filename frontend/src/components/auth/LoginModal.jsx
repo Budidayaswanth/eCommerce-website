@@ -8,7 +8,7 @@ import { RiSmartphoneLine, RiShieldCheckLine, RiUserLine, RiMailLine, RiRefreshL
 import toast from 'react-hot-toast';
 
 const LoginModal = ({ isOpen, onClose }) => {
-  const { sendOtp, verifyOtp } = useAuth();
+  const { sendOtp, resendOtp, verifyOtp } = useAuth();
 
   // Steps: 1 = Phone, 2 = OTP, 3 = Register details
   const [step, setStep] = useState(1);
@@ -75,7 +75,26 @@ const LoginModal = ({ isOpen, onClose }) => {
         otpInputsRef.current[0]?.focus();
       }, 150);
     } catch (error) {
-      toast.error('Failed to send OTP. Please try again.');
+      // error toast handled in context
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Dedicated Resend OTP Handler with Cooldown
+  const handleResendOtp = async () => {
+    if (!canResend || loading) return;
+    setLoading(true);
+    try {
+      await resendOtp(phone);
+      setTimer(30);
+      setCanResend(false);
+      setOtp(['', '', '', '', '', '']);
+      setTimeout(() => {
+        otpInputsRef.current[0]?.focus();
+      }, 150);
+    } catch (error) {
+      // error toast handled in context
     } finally {
       setLoading(false);
     }
@@ -301,13 +320,18 @@ const LoginModal = ({ isOpen, onClose }) => {
 
             {canResend ? (
               <button
-                onClick={handleSendOtp}
+                type="button"
+                onClick={handleResendOtp}
+                disabled={loading}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
                   color: 'var(--color-primary)',
                   fontWeight: '600',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
                 }}
               >
                 <RiRefreshLine size={16} /> Resend OTP

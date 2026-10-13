@@ -4,7 +4,9 @@ import { ORDER_STATUSES } from '../../utils/constants';
 import { formatPrice } from '../../utils/formatters';
 import Modal from '../common/Modal';
 import Loader from '../common/Loader';
-import { RiEyeLine } from 'react-icons/ri';
+import Input from '../common/Input';
+import { RiEyeLine, RiSearchLine } from 'react-icons/ri';
+import useDebounce from '../../hooks/useDebounce';
 import toast from 'react-hot-toast';
 
 const STATUS_TABS = ['ALL', 'PENDING', 'CONFIRMED', 'PROCESSING', 'DELIVERED', 'CANCELLED'];
@@ -14,6 +16,8 @@ const OrderManager = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ALL');
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -40,19 +44,36 @@ const OrderManager = () => {
   };
 
   const filteredOrders = orders.filter((o) => {
-    if (activeTab === 'ALL') return true;
-    return o.status === activeTab;
+    const matchesTab = activeTab === 'ALL' || o.status === activeTab;
+    const q = (debouncedSearch || '').toLowerCase();
+    const matchesSearch =
+      !q ||
+      (o.orderNumber || o.id || '').toLowerCase().includes(q) ||
+      (o.customerName || '').toLowerCase().includes(q) ||
+      (o.phone || '').toLowerCase().includes(q);
+    return matchesTab && matchesSearch;
   });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div>
-        <h1 style={{ fontSize: '1.5rem', color: 'var(--color-primary-dark)', margin: 0 }}>
-          Order Fulfillment Management
-        </h1>
-        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-          Monitor logistics dispatches, transitions, and customer shipment fulfillments.
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+        <div>
+          <h1 style={{ fontSize: '1.5rem', color: 'var(--color-primary-dark)', margin: 0 }}>
+            Order Fulfillment Management
+          </h1>
+          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+            Monitor logistics dispatches, transitions, and customer shipment fulfillments.
+          </p>
+        </div>
+
+        <div style={{ width: '280px' }}>
+          <Input
+            placeholder="Search order #, customer, phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            icon={<RiSearchLine />}
+          />
+        </div>
       </div>
 
       {/* Status Filter Tabs */}

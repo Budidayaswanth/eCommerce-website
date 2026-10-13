@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 public class ApiResponse<T> {
 
     private boolean success;
+    private String status;
     private String message;
     private T data;
     @Builder.Default
@@ -22,6 +23,17 @@ public class ApiResponse<T> {
     public static <T> ApiResponse<T> success(T data, String message) {
         return ApiResponse.<T>builder()
                 .success(true)
+                .status("SUCCESS")
+                .message(message)
+                .data(data)
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    public static <T> ApiResponse<T> success(T data, String message, String status) {
+        return ApiResponse.<T>builder()
+                .success(true)
+                .status(status != null ? status : "SUCCESS")
                 .message(message)
                 .data(data)
                 .timestamp(LocalDateTime.now())
@@ -33,8 +45,13 @@ public class ApiResponse<T> {
     }
 
     public static <T> ApiResponse<T> error(String message) {
+        return error(message, "ERROR");
+    }
+
+    public static <T> ApiResponse<T> error(String message, String status) {
         return ApiResponse.<T>builder()
                 .success(false)
+                .status(status != null ? status : "ERROR")
                 .message(message)
                 .data(null)
                 .timestamp(LocalDateTime.now())

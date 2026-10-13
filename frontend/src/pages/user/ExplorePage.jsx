@@ -6,6 +6,7 @@ import productService from '../../services/productService';
 import Button from '../../components/common/Button';
 import Footer from '../../components/layout/Footer';
 import { RiFilter3Line } from 'react-icons/ri';
+import useDebounce from '../../hooks/useDebounce';
 
 const ExplorePage = () => {
   const { category } = useParams();
@@ -30,6 +31,9 @@ const ExplorePage = () => {
     sort: sortParam,
   });
 
+  // Debounce filter changes (400ms) to prevent multiple rapid network requests
+  const debouncedFilters = useDebounce(filters, 400);
+
   // Keep filters in sync when url params change
   useEffect(() => {
     setFilters((prev) => ({
@@ -39,30 +43,39 @@ const ExplorePage = () => {
     }));
   }, [category, searchQuery]);
 
-  // Fetch filtered products
+  // Fetch filtered products using debounced filters
   useEffect(() => {
+    let isCurrent = true;
     const fetchFiltered = async () => {
       setLoading(true);
       try {
         const data = await productService.getProducts({
-          category: filters.category,
-          paintType: filters.paintType,
-          finish: filters.finish,
-          minPrice: filters.minPrice,
-          maxPrice: filters.maxPrice,
-          minRating: filters.minRating,
-          color: filters.color,
-          search: filters.search,
-          sort: filters.sort,
+          category: debouncedFilters.category,
+          paintType: debouncedFilters.paintType,
+          finish: debouncedFilters.finish,
+          minPrice: debouncedFilters.minPrice,
+          maxPrice: debouncedFilters.maxPrice,
+          minRating: debouncedFilters.minRating,
+          color: debouncedFilters.color,
+          search: debouncedFilters.search,
+          sort: debouncedFilters.sort,
         });
-        setProducts(data);
+        if (isCurrent) {
+          setProducts(data);
+        }
+      } catch (err) {
+        if (isCurrent) setProducts([]);
       } finally {
-        setLoading(false);
+        if (isCurrent) setLoading(false);
       }
     };
 
     fetchFiltered();
-  }, [filters]);
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [debouncedFilters]);
 
   const handleFilterChange = (newFilters) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));

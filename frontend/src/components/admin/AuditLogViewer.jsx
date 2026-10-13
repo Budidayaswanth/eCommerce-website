@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import adminService from '../../services/adminService';
 import { formatDate } from '../../utils/formatters';
+import useDebounce from '../../hooks/useDebounce';
 import Input from '../common/Input';
 import Loader from '../common/Loader';
 import { RiHistoryLine, RiSearchLine } from 'react-icons/ri';
@@ -9,6 +10,7 @@ const AuditLogViewer = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -24,10 +26,10 @@ const AuditLogViewer = () => {
 
   const filtered = logs.filter(
     (l) =>
-      l.action.toLowerCase().includes(search.toLowerCase()) ||
-      l.entity.toLowerCase().includes(search.toLowerCase()) ||
-      l.performedBy.toLowerCase().includes(search.toLowerCase()) ||
-      l.details.toLowerCase().includes(search.toLowerCase())
+      l.action.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      l.entity.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      l.performedBy.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      l.details.toLowerCase().includes(debouncedSearch.toLowerCase())
   );
 
   return (

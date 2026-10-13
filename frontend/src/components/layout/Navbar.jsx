@@ -15,6 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import productService from '../../services/productService';
 import { formatPrice } from '../../utils/formatters';
+import useDebounce from '../../hooks/useDebounce';
 
 const Navbar = ({ onToggleSidebar }) => {
   const { user, isAuthenticated, isAdmin, logout, openLoginModal } = useAuth();
@@ -31,28 +32,36 @@ const Navbar = ({ onToggleSidebar }) => {
   const searchRef = useRef(null);
   const userMenuRef = useRef(null);
 
-  // Debounced search logic (500ms)
+  // Debounced search query (400ms)
+  const debouncedQuery = useDebounce(searchQuery, 400);
+
   useEffect(() => {
-    if (!searchQuery.trim()) {
+    if (!debouncedQuery.trim()) {
       setSearchResults([]);
       setIsSearching(false);
       return;
     }
 
+    let isMounted = true;
     setIsSearching(true);
-    const timer = setTimeout(async () => {
-      try {
-        const results = await productService.searchProducts(searchQuery);
-        setSearchResults(results.slice(0, 5));
-      } catch (err) {
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 500);
+    productService
+      .searchProducts(debouncedQuery)
+      .then((results) => {
+        if (isMounted) {
+          setSearchResults(results.slice(0, 5));
+        }
+      })
+      .catch(() => {
+        if (isMounted) setSearchResults([]);
+      })
+      .finally(() => {
+        if (isMounted) setIsSearching(false);
+      });
 
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedQuery]);
 
   // Click outside listener
   useEffect(() => {

@@ -103,6 +103,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const resendOtp = async (phone) => {
+    try {
+      const res = await authService.resendOtp(phone);
+      toast.success('New OTP sent successfully!');
+      return res;
+    } catch (err) {
+      toast.error(err.message || 'Failed to resend OTP');
+      throw err;
+    }
+  };
+
   const verifyOtp = async ({ phone, otp, name, email }) => {
     try {
       const res = await authService.verifyOtp({ phone, otp, name, email });
@@ -161,6 +172,7 @@ export const AuthProvider = ({ children }) => {
     isLoading: state.isLoading,
     isLoginModalOpen: state.isLoginModalOpen,
     sendOtp,
+    resendOtp,
     verifyOtp,
     adminLogin,
     logout,

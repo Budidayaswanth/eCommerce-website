@@ -1,57 +1,66 @@
 import api from './api';
 
-let localChatHistory = [
-  {
-    id: 'msg-init-1',
-    sender: 'bot',
-    text: 'Hello! Welcome to LEO PAINTS 🦁 How can we help you choose the right paints or estimate your room dimensions today?',
-    timestamp: new Date(Date.now() - 60000).toISOString(),
-  },
-];
-
-const AUTO_REPLIES = [
-  'Thank you for reaching out! Our paint specialist will recommend the ideal primer and finish for your wall condition.',
-  'Did you know? You can use our Paint Calculator in the product page to determine exact liters needed!',
-  'All Leo Paints emulsions come with Low-VOC formulation and 100% lead-free pigment guarantee.',
-  'Our shipping is super fast! Orders placed before 2 PM are dispatched the same business day.',
-];
+const getChatSessionId = () => {
+  let sessId = localStorage.getItem('leo_chat_session_id');
+  if (!sessId) {
+    sessId = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    localStorage.setItem('leo_chat_session_id', sessId);
+  }
+  return sessId;
+};
 
 const chatService = {
+  getSessionId() {
+    return getChatSessionId();
+  },
+
   async getMessages() {
+    const sessionId = getChatSessionId();
     try {
-      const response = await api.get('/chat/messages');
-      if (response.data && response.data.length > 0) return response.data;
-    } catch {}
-    return localChatHistory;
+      const response = await api.get(`/chat/messages/${sessionId}`);
+      const rawList = response.data?.data || response.data || [];
+      if (Array.isArray(rawList) && rawList.length > 0) {
+        return rawList.map((m) => ({
+          id: m.id,
+          sender: (m.sender || 'BOT').toLowerCase(),
+          text: m.message,
+          timestamp: m.sentAt || new Date().toISOString(),
+        }));
+      }
+    } catch (err) {
+      // Re-throw if network or DB issue so caller / status indicator is aware
+      if (err.status) throw err;
+    }
+
+    return [
+      {
+        id: 'welcome-1',
+        sender: 'bot',
+        text: 'Hello! Welcome to LEO PAINTS 🦁 How can we help you choose the right paints or estimate your room dimensions today?',
+        timestamp: new Date().toISOString(),
+      },
+    ];
   },
 
   async sendMessage(text) {
-    const userMsg = {
-      id: `msg-user-${Date.now()}`,
-      sender: 'user',
-      text,
-      timestamp: new Date().toISOString(),
-    };
-    localChatHistory.push(userMsg);
-
-    try {
-      await api.post('/chat/messages', { text });
-    } catch {}
-
-    // Simulated smart assistant response
-    const botReply = {
-      id: `msg-bot-${Date.now() + 1}`,
-      sender: 'bot',
-      text: AUTO_REPLIES[Math.floor(Math.random() * AUTO_REPLIES.length)],
-      timestamp: new Date().toISOString(),
-    };
-
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        localChatHistory.push(botReply);
-        resolve({ userMessage: userMsg, botReply });
-      }, 700);
+    const sessionId = getChatSessionId();
+    // Post user message to real backend
+    await api.post('/chat/send', {
+      message: text,
+      sessionId,
     });
+
+    // Fetch conversation thread from backend to get saved message and bot auto-reply
+    const response = await api.get(`/chat/messages/${sessionId}`);
+    const rawList = response.data?.data || response.data || [];
+    const formatted = rawList.map((m) => ({
+      id: m.id,
+      sender: (m.sender || 'BOT').toLowerCase(),
+      text: m.message,
+      timestamp: m.sentAt || new Date().toISOString(),
+    }));
+
+    return formatted;
   },
 };
 

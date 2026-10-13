@@ -16,6 +16,7 @@ import {
   RiCloseLine,
 } from 'react-icons/ri';
 import { useAuth } from '../../context/AuthContext';
+import ServerStatusIndicator from '../common/ServerStatusIndicator';
 
 const ADMIN_NAV = [
   { label: 'Dashboard', path: '/admin', exact: true, icon: RiDashboardLine },
@@ -226,6 +227,7 @@ const AdminLayout = () => {
 
       {/* Admin Content Area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+        <ServerStatusIndicator />
         {/* Admin Header */}
         <header
           style={{

@@ -7,6 +7,7 @@ import MobileBottomNav from './MobileBottomNav';
 import CartDrawer from '../cart/CartDrawer';
 import LoginModal from '../auth/LoginModal';
 import ChatWidget from '../chat/ChatWidget';
+import ServerStatusIndicator from '../common/ServerStatusIndicator';
 import { useAuth } from '../../context/AuthContext';
 
 const MainLayout = () => {
@@ -33,6 +34,9 @@ const MainLayout = () => {
         backgroundColor: 'var(--color-bg-page)',
       }}
     >
+      {/* Live Server / Database / Offline Network Status Indicator */}
+      <ServerStatusIndicator />
+
       {/* Top auto-rotating announcement banner */}
       <TopBanner />
 

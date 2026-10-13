@@ -3,12 +3,14 @@ import adminService from '../../services/adminService';
 import Input from '../common/Input';
 import Loader from '../common/Loader';
 import { RiSearchLine, RiLockLine, RiLockUnlockLine } from 'react-icons/ri';
+import useDebounce from '../../hooks/useDebounce';
 import toast from 'react-hot-toast';
 
 const UserManager = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -28,18 +30,21 @@ const UserManager = () => {
     try {
       const updated = await adminService.toggleUserBlock(userId);
       setUsers(users.map((u) => (u.id === userId ? updated : u)));
-      toast.success(`User status updated to ${updated.status}`);
+      toast.success(`User status updated to ${updated.status || 'UPDATED'}`);
     } catch {
       toast.error('Could not toggle user status');
     }
   };
 
-  const filtered = users.filter(
-    (u) =>
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.phone.includes(search) ||
-      u.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = users.filter((u) => {
+    const q = (debouncedSearch || '').toLowerCase();
+    if (!q) return true;
+    return (
+      (u.name || '').toLowerCase().includes(q) ||
+      (u.phone || '').includes(q) ||
+      (u.email || '').toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

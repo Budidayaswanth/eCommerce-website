@@ -3,11 +3,13 @@ package com.leopaints.exception;
 import com.leopaints.dto.response.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -26,7 +28,7 @@ public class GlobalExceptionHandler {
         log.warn("Resource not found: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(ex.getMessage()));
+                .body(ApiResponse.error(ex.getMessage(), "RESOURCE_NOT_FOUND"));
     }
 
     @ExceptionHandler(BadRequestException.class)
@@ -34,7 +36,7 @@ public class GlobalExceptionHandler {
         log.warn("Bad request: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage()));
+                .body(ApiResponse.error(ex.getMessage(), "BAD_REQUEST"));
     }
 
     @ExceptionHandler(PaymentException.class)
@@ -42,7 +44,7 @@ public class GlobalExceptionHandler {
         log.error("Payment error: {}", ex.getMessage(), ex);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Payment error: " + ex.getMessage()));
+                .body(ApiResponse.error("Payment error: " + ex.getMessage(), "PAYMENT_ERROR"));
     }
 
     @ExceptionHandler(RateLimitException.class)
@@ -50,7 +52,7 @@ public class GlobalExceptionHandler {
         log.warn("Rate limit exceeded: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.TOO_MANY_REQUESTS)
-                .body(ApiResponse.error(ex.getMessage()));
+                .body(ApiResponse.error(ex.getMessage(), "RATE_LIMITED"));
     }
 
     @ExceptionHandler(UnauthorizedException.class)
@@ -58,7 +60,7 @@ public class GlobalExceptionHandler {
         log.warn("Unauthorized access: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error(ex.getMessage()));
+                .body(ApiResponse.error(ex.getMessage(), "UNAUTHORIZED"));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -66,7 +68,7 @@ public class GlobalExceptionHandler {
         log.warn("Bad credentials: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error("Invalid email or password"));
+                .body(ApiResponse.error("Invalid email or password", "INVALID_CREDENTIALS"));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -74,7 +76,7 @@ public class GlobalExceptionHandler {
         log.warn("Access denied: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error("Access denied. You do not have permission to access this resource."));
+                .body(ApiResponse.error("Access denied. You do not have permission to access this resource.", "FORBIDDEN"));
     }
 
     @ExceptionHandler(OptimisticLockingFailureException.class)
@@ -82,7 +84,15 @@ public class GlobalExceptionHandler {
         log.warn("Optimistic locking conflict: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error("The item was updated by another process. Please refresh and try again."));
+                .body(ApiResponse.error("The item was updated by another process. Please refresh and try again.", "CONFLICT"));
+    }
+
+    @ExceptionHandler({DataAccessException.class, CannotCreateTransactionException.class})
+    public ResponseEntity<ApiResponse<Void>> handleDatabaseException(Exception ex) {
+        log.error("Database connection/query failure: {}", ex.getMessage(), ex);
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiResponse.error("Database connection error: Unable to communicate with database server.", "DB_CONNECTION_ERROR"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -99,6 +109,7 @@ public class GlobalExceptionHandler {
 
         ApiResponse<Map<String, String>> response = ApiResponse.<Map<String, String>>builder()
                 .success(false)
+                .status("VALIDATION_ERROR")
                 .message("Validation failed: " + combinedMessage)
                 .data(errors)
                 .build();
@@ -111,7 +122,7 @@ public class GlobalExceptionHandler {
         log.warn("Constraint violation: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Validation error: " + ex.getMessage()));
+                .body(ApiResponse.error("Validation error: " + ex.getMessage(), "VALIDATION_ERROR"));
     }
 
     @ExceptionHandler(Exception.class)
@@ -119,6 +130,6 @@ public class GlobalExceptionHandler {
         log.error("Unhandled exception: ", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("An unexpected error occurred: " + ex.getMessage()));
+                .body(ApiResponse.error("Internal server error: " + ex.getMessage(), "SERVER_ERROR"));
     }
 }

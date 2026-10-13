@@ -2,77 +2,89 @@ import api from './api';
 import { STORAGE_KEYS } from '../utils/constants';
 
 const authService = {
+  /**
+   * Request OTP for customer login/signup
+   * @param {string} phone 10-digit phone number
+   */
   async sendOtp(phone) {
-    try {
-      const response = await api.post('/auth/send-otp', { phone });
-      return response.data;
-    } catch (error) {
-      // Fallback mock simulation for demo/dev
-      console.warn('API /auth/send-otp fallback demo mode');
-      return { success: true, message: 'OTP sent successfully to +91 ' + phone, otp: '123456' };
-    }
+    const response = await api.post('/auth/send-otp', { phone });
+    // Returns { success: true, status: 'SUCCESS', message: '...', data: { phone, expiresAt, ... } }
+    return response.data?.data || response.data;
   },
 
+  /**
+   * Resend OTP with server-side cooldown check
+   * @param {string} phone 10-digit phone number
+   */
+  async resendOtp(phone) {
+    const response = await api.post('/auth/resend-otp', { phone });
+    return response.data?.data || response.data;
+  },
+
+  /**
+   * Verify customer OTP and obtain real JWT tokens
+   */
   async verifyOtp({ phone, otp, name, email }) {
-    try {
-      const response = await api.post('/auth/verify-otp', { phone, otp, name, email });
-      if (response.data?.accessToken) {
-        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.data.accessToken);
-        if (response.data.refreshToken) {
-          localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.data.refreshToken);
-        }
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.data.user));
-      }
-      return response.data;
-    } catch (error) {
-      // Fallback demo user
-      console.warn('API /auth/verify-otp fallback demo mode');
-      const mockUser = {
-        id: 'usr_demo_101',
-        phone,
-        name: name || 'Valued Painter',
-        email: email || `user_${phone}@leopaints.com`,
-        role: 'CUSTOMER',
-        createdAt: new Date().toISOString(),
-      };
-      const token = 'mock_jwt_token_' + Date.now();
+    const response = await api.post('/auth/verify-otp', { phone, otp, name, email });
+    const payload = response.data?.data || response.data;
+
+    const token = payload.accessToken || payload.token;
+    if (token) {
       localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(mockUser));
-      return { success: true, accessToken: token, user: mockUser };
+      if (payload.refreshToken) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, payload.refreshToken);
+      }
+      if (payload.user) {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(payload.user));
+      }
     }
+    return payload;
   },
 
+  /**
+   * Admin authentication using real email & password
+   */
   async adminLogin(email, password) {
-    try {
-      const response = await api.post('/auth/admin/login', { email, password });
-      if (response.data?.accessToken) {
-        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.data.accessToken);
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.data.user));
+    const response = await api.post('/auth/admin/login', { email, password });
+    const payload = response.data?.data || response.data;
+
+    const token = payload.accessToken || payload.token;
+    if (token) {
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+      if (payload.refreshToken) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, payload.refreshToken);
       }
-      return response.data;
-    } catch (error) {
-      // Allow admin demo login
-      if (email === 'admin@leopaints.com' && (password === 'admin123' || password === 'admin')) {
-        const adminUser = {
-          id: 'admin_001',
-          name: 'Leo Master Admin',
-          email: 'admin@leopaints.com',
-          role: 'ADMIN',
-        };
-        const token = 'mock_admin_jwt_' + Date.now();
-        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(adminUser));
-        return { success: true, accessToken: token, user: adminUser };
+      if (payload.user) {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(payload.user));
       }
-      throw new Error(error.response?.data?.message || 'Invalid admin credentials');
     }
+    return payload;
   },
 
+  /**
+   * Complete customer registration
+   */
+  async register(registerData) {
+    const response = await api.post('/auth/register', registerData);
+    return response.data?.data || response.data;
+  },
+
+  /**
+   * Refresh JWT access token
+   */
   async refreshToken() {
     const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
     if (!refreshToken) return null;
-    const response = await api.post('/auth/refresh', { refreshToken });
-    return response.data;
+    const response = await api.post('/auth/refresh-token', { refreshToken });
+    const payload = response.data?.data || response.data;
+    if (payload?.accessToken || payload?.token) {
+      const newToken = payload.accessToken || payload.token;
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, newToken);
+      if (payload.refreshToken) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, payload.refreshToken);
+      }
+    }
+    return payload;
   },
 
   logout() {
@@ -86,7 +98,7 @@ const authService = {
     const userStr = localStorage.getItem(STORAGE_KEYS.USER);
     try {
       return userStr ? JSON.parse(userStr) : null;
-    } catch (e) {
+    } catch {
       return null;
     }
   },

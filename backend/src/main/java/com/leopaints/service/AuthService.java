@@ -76,6 +76,28 @@ public class AuthService {
     }
 
     @Transactional
+    public LocalDateTime resendOtp(String phone) {
+        // Enforce 30-second cooldown from the most recent OTP request
+        otpVerificationRepository.findFirstByPhoneOrderByCreatedAtDesc(phone).ifPresent(lastOtp -> {
+            if (lastOtp.getCreatedAt() != null) {
+                long secondsSince = java.time.Duration.between(lastOtp.getCreatedAt(), LocalDateTime.now()).getSeconds();
+                if (secondsSince < 30) {
+                    long remaining = 30 - secondsSince;
+                    throw new RateLimitException("Please wait " + remaining + " seconds before requesting a new OTP.");
+                }
+            }
+            // Invalidate the unverified previous OTP so it cannot be reused
+            if (!Boolean.TRUE.equals(lastOtp.getIsVerified())) {
+                lastOtp.setExpiresAt(LocalDateTime.now().minusSeconds(1));
+                otpVerificationRepository.save(lastOtp);
+            }
+        });
+
+        // Delegate to sendOtp which checks rateLimiterService, generates fresh OTP, and saves
+        return sendOtp(phone);
+    }
+
+    @Transactional
     public AuthResponse verifyOtp(VerifyOtpRequest request) {
         String phone = request.getPhone();
         String submittedOtp = request.getOtp();

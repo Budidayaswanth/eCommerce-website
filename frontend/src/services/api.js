@@ -96,8 +96,64 @@ api.interceptors.response.use(
       }
     }
 
+    // Categorize error status based on response, DB, or network
+    if (!error.response) {
+      // True network failure / server offline
+      error.status = 'NO_NETWORK';
+      error.isNetworkError = true;
+      error.message = !navigator.onLine
+        ? 'No Internet Connection. You are currently offline.'
+        : 'Server Unreachable. Unable to establish connection to Leo Paints backend.';
+    } else {
+      const respData = error.response.data;
+      const httpStatus = error.response.status;
+
+      // Retain backend's structured status if present
+      if (respData && respData.status) {
+        error.status = respData.status;
+        error.message = respData.message || error.message;
+      } else if (httpStatus === 503) {
+        error.status = 'DB_CONNECTION_ERROR';
+        error.message = respData?.message || 'Database connection error. Service temporarily unavailable.';
+      } else if (httpStatus >= 500) {
+        error.status = 'SERVER_ERROR';
+        error.message = respData?.message || 'Internal server error occurred.';
+      } else if (httpStatus === 429) {
+        error.status = 'RATE_LIMITED';
+        error.message = respData?.message || 'Too many requests. Please slow down.';
+      } else if (httpStatus === 404) {
+        error.status = 'RESOURCE_NOT_FOUND';
+      } else if (httpStatus === 400) {
+        error.status = 'BAD_REQUEST';
+      } else if (httpStatus === 403) {
+        error.status = 'FORBIDDEN';
+      }
+    }
+
     return Promise.reject(error);
   }
 );
+
+// Method to verify live backend & DB health
+api.checkHealth = async () => {
+  try {
+    const response = await api.get('/health', { timeout: 5000 });
+    return {
+      isOnline: true,
+      dbStatus: response.data?.data?.dbStatus || 'UP',
+      serverStatus: 'UP',
+      status: response.data?.status || 'DB_CONNECTED',
+      message: response.data?.message || 'Database connection healthy',
+    };
+  } catch (err) {
+    return {
+      isOnline: navigator.onLine,
+      dbStatus: err.status === 'DB_CONNECTION_ERROR' ? 'DOWN' : 'UNKNOWN',
+      serverStatus: err.status === 'NO_NETWORK' ? 'DOWN' : 'UP',
+      status: err.status || 'NO_NETWORK',
+      message: err.message || 'Unable to communicate with server',
+    };
+  }
+};
 
 export default api;

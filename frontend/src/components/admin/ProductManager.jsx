@@ -7,12 +7,14 @@ import Input from '../common/Input';
 import Modal from '../common/Modal';
 import Loader from '../common/Loader';
 import { RiAddLine, RiEditLine, RiDeleteBinLine, RiSearchLine, RiImageAddLine } from 'react-icons/ri';
+import useDebounce from '../../hooks/useDebounce';
 import toast from 'react-hot-toast';
 
 const ProductManager = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [categoryFilter, setCategoryFilter] = useState('all');
 
   // Modal form states
@@ -113,9 +115,10 @@ const ProductManager = () => {
   };
 
   const filtered = products.filter((p) => {
+    const term = (debouncedSearchTerm || '').toLowerCase();
     const matchesSearch =
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.paintType.toLowerCase().includes(searchTerm.toLowerCase());
+      (p.name || '').toLowerCase().includes(term) ||
+      (p.paintType || '').toLowerCase().includes(term);
     const matchesCat = categoryFilter === 'all' || p.category === categoryFilter;
     return matchesSearch && matchesCat;
   });
