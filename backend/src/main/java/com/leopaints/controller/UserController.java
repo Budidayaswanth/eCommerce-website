@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/profile")
+@RequestMapping({"/api/profile", "/api/users/me", "/api/users"})
 @RequiredArgsConstructor
 @Tag(name = "User Profile", description = "Customer profile and address management")
 public class UserController {
@@ -81,5 +81,15 @@ public class UserController {
     ) {
         userService.deleteAddress(principal.getId(), id);
         return ResponseEntity.ok(ApiResponse.success(null, "Address deleted successfully"));
+    }
+
+    @PatchMapping("/addresses/{id}/default")
+    @Operation(summary = "Set address as default")
+    public ResponseEntity<ApiResponse<AddressResponse>> setDefaultAddress(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        AddressResponse response = userService.setDefaultAddress(principal.getId(), id);
+        return ResponseEntity.ok(ApiResponse.success(response, "Default address updated"));
     }
 }

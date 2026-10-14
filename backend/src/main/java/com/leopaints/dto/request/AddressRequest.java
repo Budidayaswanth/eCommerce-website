@@ -13,10 +13,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AddressRequest {
 
-    private String label;
+    private String label; // Home, Office, Work / Site
+    private String receiverName;
+    private String receiverPhone;
 
     @NotBlank(message = "Full address is required")
     private String fullAddress;
+
+    private String landmark;
 
     @NotBlank(message = "City is required")
     private String city;
@@ -27,6 +31,9 @@ public class AddressRequest {
     @NotBlank(message = "Pincode is required")
     @Pattern(regexp = "^[1-9][0-9]{5}$", message = "Pincode must be a valid 6-digit Indian PIN code")
     private String pincode;
+
+    private Double latitude;
+    private Double longitude;
 
     @Builder.Default
     private Boolean isDefault = false;

@@ -177,4 +177,20 @@ public class UserService {
 
         addressRepository.delete(address);
     }
+
+    @Transactional
+    public AddressResponse setDefaultAddress(Long userId, Long addressId) {
+        Address address = addressRepository.findByIdAndUserId(addressId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Address not found or does not belong to you"));
+
+        List<Address> addresses = addressRepository.findByUserId(userId);
+        addresses.forEach(a -> {
+            a.setIsDefault(false);
+            addressRepository.save(a);
+        });
+
+        address.setIsDefault(true);
+        Address updated = addressRepository.save(address);
+        return addressMapper.toResponse(updated);
+    }
 }

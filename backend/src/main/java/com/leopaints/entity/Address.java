@@ -22,10 +22,19 @@ public class Address {
     @JsonIgnore
     private User user;
 
-    private String label; // e.g. Home, Office
+    private String label; // e.g. Home, Office, Work / Site
+
+    @Column(name = "receiver_name")
+    private String receiverName;
+
+    @Column(name = "receiver_phone")
+    private String receiverPhone;
 
     @Column(name = "full_address", nullable = false, length = 500)
     private String fullAddress;
+
+    @Column(name = "landmark")
+    private String landmark;
 
     @Column(nullable = false)
     private String city;
@@ -35,6 +44,12 @@ public class Address {
 
     @Column(nullable = false)
     private String pincode;
+
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
 
     @Column(name = "is_default", nullable = false)
     @Builder.Default
