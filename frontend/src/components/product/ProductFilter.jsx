@@ -2,7 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { CATEGORIES, PAINT_TYPES, FINISHES, TRENDING_COLORS } from '../../utils/constants';
 import ColorSwatch from './ColorSwatch';
 import Button from '../common/Button';
-import { RiFilter3Line, RiCloseLine, RiStarFill } from 'react-icons/ri';
+import {
+  RiFilter3Line,
+  RiCloseLine,
+  RiStarFill,
+  RiArrowDownSLine,
+  RiArrowUpSLine,
+  RiSearchLine,
+} from 'react-icons/ri';
 
 const ProductFilter = ({
   filters,
@@ -19,6 +26,23 @@ const ProductFilter = ({
   const [localRating, setLocalRating] = useState(filters.minRating || '');
   const [localColor, setLocalColor] = useState(filters.color || '');
   const [localInStockOnly, setLocalInStockOnly] = useState(filters.inStockOnly || false);
+
+  // Accordion collapsible section toggles
+  const [openSections, setOpenSections] = useState({
+    category: true,
+    paintType: true,
+    finish: true,
+    price: true,
+    rating: true,
+    color: true,
+  });
+
+  const [typeSearch, setTypeSearch] = useState('');
+  const [finishSearch, setFinishSearch] = useState('');
+
+  const toggleSection = (section) => {
+    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
 
   // Synchronize internal state whenever parent filters prop changes
   useEffect(() => {
@@ -136,40 +160,71 @@ const ProductFilter = ({
       </div>
 
       {/* Category */}
-      <div>
-        <div style={{ fontWeight: '600', fontSize: '0.875rem', marginBottom: '10px', color: 'var(--color-text-primary)' }}>
-          Category
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', cursor: 'pointer' }}>
-            <input
-              type="radio"
-              name="filter-cat"
-              checked={localCategory === 'all' || !localCategory}
-              onChange={() => handleCategorySelect('all')}
-            />
-            All Categories
-          </label>
-          {CATEGORIES.map((cat) => (
-            <label
-              key={cat.id}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', cursor: 'pointer' }}
-            >
+      <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '16px' }}>
+        <button
+          type="button"
+          onClick={() => toggleSection('category')}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            fontWeight: '700',
+            fontSize: '0.875rem',
+            color: 'var(--color-primary-dark)',
+            marginBottom: openSections.category ? '10px' : 0,
+          }}
+        >
+          <span>Category</span>
+          {openSections.category ? <RiArrowUpSLine size={18} /> : <RiArrowDownSLine size={18} />}
+        </button>
+
+        {openSections.category && (
+          <div
+            style={{
+              maxHeight: '180px',
+              overflowY: 'auto',
+              paddingRight: '6px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}
+            className="filter-scroll-container"
+          >
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', cursor: 'pointer' }}>
               <input
                 type="radio"
                 name="filter-cat"
-                checked={localCategory === cat.slug || localCategory === cat.id}
-                onChange={() => handleCategorySelect(cat.slug)}
+                checked={localCategory === 'all' || !localCategory}
+                onChange={() => handleCategorySelect('all')}
               />
-              {cat.name}
+              All Categories
             </label>
-          ))}
-        </div>
+            {CATEGORIES.map((cat) => (
+              <label
+                key={cat.id}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', cursor: 'pointer' }}
+              >
+                <input
+                  type="radio"
+                  name="filter-cat"
+                  checked={localCategory === cat.slug || localCategory === cat.id}
+                  onChange={() => handleCategorySelect(cat.slug)}
+                />
+                {cat.name}
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Stock Availability */}
-      <div>
-        <div style={{ fontWeight: '600', fontSize: '0.875rem', marginBottom: '8px', color: 'var(--color-text-primary)' }}>
+      <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '16px' }}>
+        <div style={{ fontWeight: '700', fontSize: '0.875rem', marginBottom: '8px', color: 'var(--color-primary-dark)' }}>
           Availability
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', cursor: 'pointer' }}>
@@ -185,134 +240,365 @@ const ProductFilter = ({
         </label>
       </div>
 
-      {/* Paint Types */}
-      <div>
-        <div style={{ fontWeight: '600', fontSize: '0.875rem', marginBottom: '10px', color: 'var(--color-text-primary)' }}>
-          Paint Technology
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {PAINT_TYPES.map((type) => (
-            <label
-              key={type}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', cursor: 'pointer' }}
-            >
-              <input
-                type="checkbox"
-                checked={localTypes.includes(type)}
-                onChange={() => handleToggleType(type)}
+      {/* Paint Technology */}
+      <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '16px' }}>
+        <button
+          type="button"
+          onClick={() => toggleSection('paintType')}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            fontWeight: '700',
+            fontSize: '0.875rem',
+            color: 'var(--color-primary-dark)',
+            marginBottom: openSections.paintType ? '10px' : 0,
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            Paint Technology
+            {localTypes.length > 0 && (
+              <span
+                style={{
+                  fontSize: '0.6875rem',
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                  backgroundColor: 'var(--color-primary)',
+                  color: '#FFFFFF',
+                }}
+              >
+                {localTypes.length}
+              </span>
+            )}
+          </span>
+          {openSections.paintType ? <RiArrowUpSLine size={18} /> : <RiArrowDownSLine size={18} />}
+        </button>
+
+        {openSections.paintType && (
+          <div>
+            <div style={{ position: 'relative', marginBottom: '8px' }}>
+              <RiSearchLine
+                size={14}
+                style={{
+                  position: 'absolute',
+                  left: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--color-text-muted)',
+                }}
               />
-              {type}
-            </label>
-          ))}
-        </div>
+              <input
+                type="text"
+                placeholder="Search paint types..."
+                value={typeSearch}
+                onChange={(e) => setTypeSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '30px',
+                  padding: '0 8px 0 28px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--color-border)',
+                  fontSize: '0.75rem',
+                }}
+              />
+            </div>
+            <div
+              style={{
+                maxHeight: '190px',
+                overflowY: 'auto',
+                paddingRight: '6px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+              className="filter-scroll-container"
+            >
+              {PAINT_TYPES.filter((t) => t.toLowerCase().includes(typeSearch.toLowerCase().trim())).map((type) => (
+                <label
+                  key={type}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', cursor: 'pointer' }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={localTypes.includes(type)}
+                    onChange={() => handleToggleType(type)}
+                  />
+                  <span>{type}</span>
+                </label>
+              ))}
+              {PAINT_TYPES.filter((t) => t.toLowerCase().includes(typeSearch.toLowerCase().trim())).length === 0 && (
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', padding: '6px 0' }}>
+                  No matching paint technology
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Finishes */}
-      <div>
-        <div style={{ fontWeight: '600', fontSize: '0.875rem', marginBottom: '10px', color: 'var(--color-text-primary)' }}>
-          Surface Sheen & Finish
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {FINISHES.map((fin) => (
-            <label
-              key={fin}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', cursor: 'pointer' }}
-            >
-              <input
-                type="checkbox"
-                checked={localFinishes.includes(fin)}
-                onChange={() => handleToggleFinish(fin)}
+      {/* Surface Sheen & Finish */}
+      <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '16px' }}>
+        <button
+          type="button"
+          onClick={() => toggleSection('finish')}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            fontWeight: '700',
+            fontSize: '0.875rem',
+            color: 'var(--color-primary-dark)',
+            marginBottom: openSections.finish ? '10px' : 0,
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            Surface Sheen & Finish
+            {localFinishes.length > 0 && (
+              <span
+                style={{
+                  fontSize: '0.6875rem',
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                  backgroundColor: 'var(--color-primary)',
+                  color: '#FFFFFF',
+                }}
+              >
+                {localFinishes.length}
+              </span>
+            )}
+          </span>
+          {openSections.finish ? <RiArrowUpSLine size={18} /> : <RiArrowDownSLine size={18} />}
+        </button>
+
+        {openSections.finish && (
+          <div>
+            <div style={{ position: 'relative', marginBottom: '8px' }}>
+              <RiSearchLine
+                size={14}
+                style={{
+                  position: 'absolute',
+                  left: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--color-text-muted)',
+                }}
               />
-              {fin}
-            </label>
-          ))}
-        </div>
+              <input
+                type="text"
+                placeholder="Search finishes..."
+                value={finishSearch}
+                onChange={(e) => setFinishSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '30px',
+                  padding: '0 8px 0 28px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--color-border)',
+                  fontSize: '0.75rem',
+                }}
+              />
+            </div>
+            <div
+              style={{
+                maxHeight: '190px',
+                overflowY: 'auto',
+                paddingRight: '6px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+              className="filter-scroll-container"
+            >
+              {FINISHES.filter((f) => f.toLowerCase().includes(finishSearch.toLowerCase().trim())).map((fin) => (
+                <label
+                  key={fin}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', cursor: 'pointer' }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={localFinishes.includes(fin)}
+                    onChange={() => handleToggleFinish(fin)}
+                  />
+                  <span>{fin}</span>
+                </label>
+              ))}
+              {FINISHES.filter((f) => f.toLowerCase().includes(finishSearch.toLowerCase().trim())).length === 0 && (
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', padding: '6px 0' }}>
+                  No matching finish found
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Price Range */}
-      <div>
-        <div style={{ fontWeight: '600', fontSize: '0.875rem', marginBottom: '10px', color: 'var(--color-text-primary)' }}>
-          Price Range (₹)
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <input
-            type="number"
-            placeholder="Min"
-            value={localMinPrice}
-            onChange={(e) => setLocalMinPrice(e.target.value)}
-            onBlur={handlePriceBlur}
-            onKeyDown={(e) => { if (e.key === 'Enter') handlePriceBlur(); }}
-            style={{
-              width: '100%',
-              height: '36px',
-              padding: '0 8px',
-              borderRadius: '6px',
-              border: '1px solid var(--color-border)',
-              fontSize: '0.8125rem',
-            }}
-          />
-          <span style={{ color: 'var(--color-text-muted)' }}>-</span>
-          <input
-            type="number"
-            placeholder="Max"
-            value={localMaxPrice}
-            onChange={(e) => setLocalMaxPrice(e.target.value)}
-            onBlur={handlePriceBlur}
-            onKeyDown={(e) => { if (e.key === 'Enter') handlePriceBlur(); }}
-            style={{
-              width: '100%',
-              height: '36px',
-              padding: '0 8px',
-              borderRadius: '6px',
-              border: '1px solid var(--color-border)',
-              fontSize: '0.8125rem',
-            }}
-          />
-        </div>
+      <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '16px' }}>
+        <button
+          type="button"
+          onClick={() => toggleSection('price')}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            fontWeight: '700',
+            fontSize: '0.875rem',
+            color: 'var(--color-primary-dark)',
+            marginBottom: openSections.price ? '10px' : 0,
+          }}
+        >
+          <span>Price Range (₹)</span>
+          {openSections.price ? <RiArrowUpSLine size={18} /> : <RiArrowDownSLine size={18} />}
+        </button>
+
+        {openSections.price && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input
+              type="number"
+              placeholder="Min"
+              value={localMinPrice}
+              onChange={(e) => setLocalMinPrice(e.target.value)}
+              onBlur={handlePriceBlur}
+              onKeyDown={(e) => { if (e.key === 'Enter') handlePriceBlur(); }}
+              style={{
+                width: '100%',
+                height: '36px',
+                padding: '0 8px',
+                borderRadius: '6px',
+                border: '1px solid var(--color-border)',
+                fontSize: '0.8125rem',
+              }}
+            />
+            <span style={{ color: 'var(--color-text-muted)' }}>-</span>
+            <input
+              type="number"
+              placeholder="Max"
+              value={localMaxPrice}
+              onChange={(e) => setLocalMaxPrice(e.target.value)}
+              onBlur={handlePriceBlur}
+              onKeyDown={(e) => { if (e.key === 'Enter') handlePriceBlur(); }}
+              style={{
+                width: '100%',
+                height: '36px',
+                padding: '0 8px',
+                borderRadius: '6px',
+                border: '1px solid var(--color-border)',
+                fontSize: '0.8125rem',
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Trending Color Swatches */}
-      <div>
-        <div style={{ fontWeight: '600', fontSize: '0.875rem', marginBottom: '10px', color: 'var(--color-text-primary)' }}>
-          Color Family
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {TRENDING_COLORS.map((col) => (
-            <ColorSwatch
-              key={col.name}
-              colorName={col.name}
-              hexCode={col.hex}
-              isSelected={localColor === col.name}
-              size={30}
-              onClick={() => handleColorSelect(col.name)}
-            />
-          ))}
-        </div>
+      <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '16px' }}>
+        <button
+          type="button"
+          onClick={() => toggleSection('color')}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            fontWeight: '700',
+            fontSize: '0.875rem',
+            color: 'var(--color-primary-dark)',
+            marginBottom: openSections.color ? '10px' : 0,
+          }}
+        >
+          <span>Color Family</span>
+          {openSections.color ? <RiArrowUpSLine size={18} /> : <RiArrowDownSLine size={18} />}
+        </button>
+
+        {openSections.color && (
+          <div
+            style={{
+              maxHeight: '160px',
+              overflowY: 'auto',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '8px',
+              paddingRight: '4px',
+            }}
+            className="filter-scroll-container"
+          >
+            {TRENDING_COLORS.map((col) => (
+              <ColorSwatch
+                key={col.name}
+                colorName={col.name}
+                hexCode={col.hex}
+                isSelected={localColor === col.name}
+                size={30}
+                onClick={() => handleColorSelect(col.name)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Customer Rating */}
-      <div>
-        <div style={{ fontWeight: '600', fontSize: '0.875rem', marginBottom: '10px', color: 'var(--color-text-primary)' }}>
-          Minimum Rating
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {[4, 3, 2].map((stars) => (
-            <label
-              key={stars}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', cursor: 'pointer' }}
-            >
-              <input
-                type="radio"
-                name="filter-rating"
-                checked={Number(localRating) === stars}
-                onChange={() => handleRatingSelect(stars)}
-              />
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#B45309' }}>
-                {stars} <RiStarFill color="#FFD700" /> & above
-              </span>
-            </label>
-          ))}
-        </div>
+      <div style={{ paddingBottom: '8px' }}>
+        <button
+          type="button"
+          onClick={() => toggleSection('rating')}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            fontWeight: '700',
+            fontSize: '0.875rem',
+            color: 'var(--color-primary-dark)',
+            marginBottom: openSections.rating ? '10px' : 0,
+          }}
+        >
+          <span>Minimum Rating</span>
+          {openSections.rating ? <RiArrowUpSLine size={18} /> : <RiArrowDownSLine size={18} />}
+        </button>
+
+        {openSections.rating && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {[4, 3, 2].map((stars) => (
+              <label
+                key={stars}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', cursor: 'pointer' }}
+              >
+                <input
+                  type="radio"
+                  name="filter-rating"
+                  checked={Number(localRating) === stars}
+                  onChange={() => handleRatingSelect(stars)}
+                />
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#B45309' }}>
+                  {stars} <RiStarFill color="#FFD700" /> & above
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Apply Button */}
@@ -383,6 +669,23 @@ const ProductFilter = ({
       )}
 
       <style>{`
+        .filter-scroll-container {
+          scrollbar-width: thin;
+          scrollbar-color: #CBD5E1 transparent;
+        }
+        .filter-scroll-container::-webkit-scrollbar {
+          width: 5px;
+        }
+        .filter-scroll-container::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .filter-scroll-container::-webkit-scrollbar-thumb {
+          background-color: #CBD5E1;
+          border-radius: 4px;
+        }
+        .filter-scroll-container::-webkit-scrollbar-thumb:hover {
+          background-color: #94A3B8;
+        }
         @media (max-width: 1024px) {
           .desktop-filter-panel {
             display: none !important;

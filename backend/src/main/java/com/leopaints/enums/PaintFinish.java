@@ -7,5 +7,13 @@ public enum PaintFinish {
     SEMI_GLOSS,
     EGGSHELL,
     METALLIC,
-    TEXTURED
+    TEXTURED,
+    HIGH_GLOSS,
+    SHEEN,
+    SOFT_SHEEN,
+    SILK,
+    VELVET,
+    PEARL,
+    RUSTIC,
+    CRACKLE
 }

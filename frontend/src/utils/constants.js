@@ -19,21 +19,37 @@ export const CATEGORIES = [
 
 export const PAINT_TYPES = [
   'Luxury Emulsion',
-  'Premium Acrylic',
+  'Interior Architectural',
+  'Exterior WeatherShield',
+  'Primer & Undercoat',
+  'Masonry Sealer',
+  'Wall Putty & Leveler',
   'Damp Proof Polymer',
+  'Premium Acrylic',
   'Oil-Based Enamel',
-  'Epoxy Coating',
+  'Epoxy Floor Coating',
   'Polyurethane (PU)',
+  'Designer Texture',
+  'Metallic Specialty Coat',
+  'Rust Preventive Primer',
+  'Wood Varnish & Stain',
   'Distemper',
+  'Chalk Decorative Paint',
 ];
 
 export const FINISHES = [
   'Matte',
   'Eggshell',
   'Satin / Soft Sheen',
+  'Silk Luxury Sheen',
+  'Velvet Soft-Touch',
   'Semi-Gloss',
-  'High-Gloss',
+  'Gloss',
+  'High-Gloss Mirror',
+  'Pearl Iridescent',
+  'Metallic Sparkle',
   'Textured Stucco',
+  'Rustic Weathered',
 ];
 
 export const SIZES = ['1 Litre', '4 Litres', '10 Litres', '20 Litres'];

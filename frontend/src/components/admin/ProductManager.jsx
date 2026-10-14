@@ -16,6 +16,7 @@ const ProductManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [finishFilter, setFinishFilter] = useState('all');
 
   // Modal form states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -120,7 +121,8 @@ const ProductManager = () => {
       (p.name || '').toLowerCase().includes(term) ||
       (p.paintType || '').toLowerCase().includes(term);
     const matchesCat = categoryFilter === 'all' || p.category === categoryFilter;
-    return matchesSearch && matchesCat;
+    const matchesFinish = finishFilter === 'all' || p.finish === finishFilter;
+    return matchesSearch && matchesCat && matchesFinish;
   });
 
   return (
@@ -178,6 +180,26 @@ const ProductManager = () => {
           {CATEGORIES.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={finishFilter}
+          onChange={(e) => setFinishFilter(e.target.value)}
+          style={{
+            height: '42px',
+            padding: '0 14px',
+            borderRadius: 'var(--radius-btn)',
+            border: '1.5px solid var(--color-border)',
+            backgroundColor: '#FFFFFF',
+            fontSize: '0.875rem',
+          }}
+        >
+          <option value="all">All Finishes</option>
+          {FINISHES.map((f) => (
+            <option key={f} value={f}>
+              {f}
             </option>
           ))}
         </select>
@@ -284,7 +306,7 @@ const ProductManager = () => {
             required
           />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
             <div>
               <label style={{ fontSize: '0.875rem', fontWeight: '500', display: 'block', marginBottom: '6px' }}>
                 Category
@@ -314,6 +336,21 @@ const ProductManager = () => {
               >
                 {PAINT_TYPES.map((t) => (
                   <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.875rem', fontWeight: '500', display: 'block', marginBottom: '6px' }}>
+                Surface Finish
+              </label>
+              <select
+                value={formData.finish}
+                onChange={(e) => setFormData({ ...formData, finish: e.target.value })}
+                style={{ width: '100%', height: '42px', padding: '0 12px', borderRadius: '8px', border: '1.5px solid var(--color-border)' }}
+              >
+                {FINISHES.map((f) => (
+                  <option key={f} value={f}>{f}</option>
                 ))}
               </select>
             </div>

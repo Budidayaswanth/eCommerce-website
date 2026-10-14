@@ -28,6 +28,7 @@ const Navbar = ({ onToggleSidebar }) => {
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
 
   const searchRef = useRef(null);
   const userMenuRef = useRef(null);
@@ -39,6 +40,7 @@ const Navbar = ({ onToggleSidebar }) => {
     if (!debouncedQuery.trim()) {
       setSearchResults([]);
       setIsSearching(false);
+      setSelectedIndex(-1);
       return;
     }
 
@@ -48,7 +50,8 @@ const Navbar = ({ onToggleSidebar }) => {
       .searchProducts(debouncedQuery)
       .then((results) => {
         if (isMounted) {
-          setSearchResults(results.slice(0, 5));
+          setSearchResults(results.slice(0, 8));
+          setSelectedIndex(-1);
         }
       })
       .catch(() => {
@@ -77,11 +80,35 @@ const Navbar = ({ onToggleSidebar }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleKeyDown = (e) => {
+    if (!showSearchDropdown || searchResults.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev < searchResults.length - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : searchResults.length - 1));
+    } else if (e.key === 'Enter') {
+      if (selectedIndex >= 0 && searchResults[selectedIndex]) {
+        e.preventDefault();
+        handleSelectResult(searchResults[selectedIndex].slug);
+      }
+    } else if (e.key === 'Escape') {
+      setShowSearchDropdown(false);
+      setSelectedIndex(-1);
+    }
+  };
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    if (selectedIndex >= 0 && searchResults[selectedIndex]) {
+      handleSelectResult(searchResults[selectedIndex].slug);
+      return;
+    }
     if (searchQuery.trim()) {
       setShowSearchDropdown(false);
       setShowMobileSearch(false);
+      setSelectedIndex(-1);
       navigate(`/explore?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
@@ -90,6 +117,7 @@ const Navbar = ({ onToggleSidebar }) => {
     setShowSearchDropdown(false);
     setShowMobileSearch(false);
     setSearchQuery('');
+    setSelectedIndex(-1);
     navigate(`/product/${slug}`);
   };
 
@@ -198,6 +226,7 @@ const Navbar = ({ onToggleSidebar }) => {
                   setShowSearchDropdown(true);
                 }}
                 onFocus={() => setShowSearchDropdown(true)}
+                onKeyDown={handleKeyDown}
                 style={{
                   width: '100%',
                   height: '42px',
@@ -240,68 +269,91 @@ const Navbar = ({ onToggleSidebar }) => {
                 border: '1px solid var(--color-border)',
                 overflow: 'hidden',
                 zIndex: 10,
+                maxHeight: '460px',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
               {isSearching ? (
-                <div style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <div style={{ padding: '20px 16px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
                   Searching catalog...
                 </div>
               ) : searchResults.length > 0 ? (
-                <div style={{ padding: '8px 0' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                   <div
                     style={{
-                      padding: '6px 16px',
+                      padding: '8px 16px',
                       fontSize: '0.75rem',
-                      fontWeight: '600',
+                      fontWeight: '700',
                       color: 'var(--color-text-muted)',
                       textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      backgroundColor: 'var(--color-bg-page)',
+                      borderBottom: '1px solid var(--color-border-light)',
                     }}
                   >
-                    Suggested Products
+                    Suggested Formulations ({searchResults.length})
                   </div>
-                  {searchResults.map((product) => (
-                    <div
-                      key={product.id}
-                      onClick={() => handleSelectResult(product.slug)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '10px 16px',
-                        cursor: 'pointer',
-                        transition: 'background-color var(--transition-fast)',
-                      }}
-                      className="search-item-hover"
-                    >
-                      <img
-                        src={product.image}
-                        alt={product.name}
+                  <div
+                    style={{
+                      maxHeight: '340px',
+                      overflowY: 'auto',
+                      padding: '4px 0',
+                    }}
+                    className="navbar-search-results-scroll"
+                  >
+                    {searchResults.map((product, idx) => (
+                      <div
+                        key={product.id}
+                        onClick={() => handleSelectResult(product.slug)}
+                        onMouseEnter={() => setSelectedIndex(idx)}
                         style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '6px',
-                          objectFit: 'cover',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          padding: '10px 16px',
+                          cursor: 'pointer',
+                          backgroundColor: idx === selectedIndex ? 'var(--color-primary-subtle)' : 'transparent',
+                          transition: 'background-color var(--transition-fast)',
                         }}
-                      />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
+                        className="search-item-hover"
+                      >
+                        <img
+                          src={product.image}
+                          alt={product.name}
                           style={{
-                            fontSize: '0.875rem',
-                            fontWeight: '600',
-                            color: 'var(--color-text-primary)',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
+                            width: '42px',
+                            height: '42px',
+                            borderRadius: '6px',
+                            objectFit: 'cover',
+                            border: '1px solid var(--color-border)',
+                            flexShrink: 0,
                           }}
-                        >
-                          {product.name}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-                          {product.categoryName} • <span style={{ color: 'var(--color-primary)', fontWeight: '600' }}>{formatPrice(product.price)}</span>
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontSize: '0.875rem',
+                              fontWeight: '600',
+                              color: 'var(--color-text-primary)',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {product.name}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'flex', gap: '6px' }}>
+                            <span>{product.categoryName}</span>
+                            <span>•</span>
+                            <span style={{ color: 'var(--color-primary)', fontWeight: '700' }}>
+                              {formatPrice(product.price)}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                   <div
                     onClick={handleSearchSubmit}
                     style={{
@@ -309,18 +361,19 @@ const Navbar = ({ onToggleSidebar }) => {
                       borderTop: '1px solid var(--color-border)',
                       textAlign: 'center',
                       fontSize: '0.8125rem',
-                      fontWeight: '600',
+                      fontWeight: '700',
                       color: 'var(--color-primary)',
                       cursor: 'pointer',
                       backgroundColor: 'var(--color-bg-page)',
+                      transition: 'background-color var(--transition-fast)',
                     }}
                   >
-                    View all results for "{searchQuery}"
+                    View all results for "{searchQuery}" →
                   </div>
                 </div>
               ) : (
-                <div style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                  No matching paints found
+                <div style={{ padding: '20px 16px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+                  No matching paints found for "{searchQuery}"
                 </div>
               )}
             </div>
@@ -550,14 +603,19 @@ const Navbar = ({ onToggleSidebar }) => {
 
       {/* Mobile search bar expands */}
       {showMobileSearch && (
-        <div style={{ padding: '8px 16px 12px', borderTop: '1px solid var(--color-border)' }}>
+        <div style={{ padding: '8px 16px 14px', borderTop: '1px solid var(--color-border)', backgroundColor: '#FFFFFF', position: 'relative' }}>
           <form onSubmit={handleSearchSubmit}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <input
                 type="text"
                 placeholder="Search Leo Paints products..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowSearchDropdown(true);
+                }}
+                onFocus={() => setShowSearchDropdown(true)}
+                onKeyDown={handleKeyDown}
                 autoFocus
                 style={{
                   width: '100%',
@@ -565,7 +623,7 @@ const Navbar = ({ onToggleSidebar }) => {
                   padding: '0 36px 0 14px',
                   backgroundColor: 'var(--color-bg-page)',
                   borderRadius: 'var(--radius-full)',
-                  border: '1px solid var(--color-border)',
+                  border: '1.5px solid var(--color-border)',
                   fontSize: '0.875rem',
                 }}
               />
@@ -577,6 +635,109 @@ const Navbar = ({ onToggleSidebar }) => {
               </button>
             </div>
           </form>
+
+          {/* Mobile Autocomplete Results Dropdown */}
+          {showSearchDropdown && searchQuery.trim().length > 0 && (
+            <div
+              style={{
+                marginTop: '8px',
+                backgroundColor: '#FFFFFF',
+                borderRadius: 'var(--radius-card)',
+                boxShadow: 'var(--shadow-lg)',
+                border: '1px solid var(--color-border)',
+                overflow: 'hidden',
+                maxHeight: '320px',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {isSearching ? (
+                <div style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+                  Searching catalog...
+                </div>
+              ) : searchResults.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      maxHeight: '230px',
+                      overflowY: 'auto',
+                      padding: '4px 0',
+                    }}
+                    className="navbar-search-results-scroll"
+                  >
+                    {searchResults.map((product, idx) => (
+                      <div
+                        key={product.id}
+                        onClick={() => handleSelectResult(product.slug)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          padding: '10px 14px',
+                          cursor: 'pointer',
+                          backgroundColor: idx === selectedIndex ? 'var(--color-primary-subtle)' : 'transparent',
+                          borderBottom: '1px solid var(--color-border-light)',
+                        }}
+                      >
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          style={{
+                            width: '38px',
+                            height: '38px',
+                            borderRadius: '6px',
+                            objectFit: 'cover',
+                            border: '1px solid var(--color-border)',
+                            flexShrink: 0,
+                          }}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontSize: '0.84rem',
+                              fontWeight: '600',
+                              color: 'var(--color-text-primary)',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {product.name}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'flex', gap: '6px' }}>
+                            <span>{product.categoryName}</span>
+                            <span>•</span>
+                            <span style={{ color: 'var(--color-primary)', fontWeight: '700' }}>
+                              {formatPrice(product.price)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div
+                    onClick={handleSearchSubmit}
+                    style={{
+                      padding: '9px 14px',
+                      borderTop: '1px solid var(--color-border)',
+                      textAlign: 'center',
+                      fontSize: '0.8rem',
+                      fontWeight: '700',
+                      color: 'var(--color-primary)',
+                      cursor: 'pointer',
+                      backgroundColor: 'var(--color-bg-page)',
+                    }}
+                  >
+                    View all results for "{searchQuery}" →
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+                  No matching paints found
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -591,6 +752,20 @@ const Navbar = ({ onToggleSidebar }) => {
         }
         .search-item-hover:hover {
           background-color: var(--color-bg-page);
+        }
+        .navbar-search-results-scroll::-webkit-scrollbar {
+          width: 5px;
+        }
+        .navbar-search-results-scroll::-webkit-scrollbar-track {
+          background: #F1F5F9;
+          border-radius: 4px;
+        }
+        .navbar-search-results-scroll::-webkit-scrollbar-thumb {
+          background: #CBD5E1;
+          border-radius: 4px;
+        }
+        .navbar-search-results-scroll::-webkit-scrollbar-thumb:hover {
+          background: var(--color-primary);
         }
         .dropdown-menu-item:hover {
           background-color: var(--color-bg-page);

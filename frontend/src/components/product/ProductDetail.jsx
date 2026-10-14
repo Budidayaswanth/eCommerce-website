@@ -6,7 +6,7 @@ import wishlistService from '../../services/wishlistService';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatPrice, calculateDiscount, formatDate } from '../../utils/formatters';
-import { TRENDING_COLORS } from '../../utils/constants';
+import { TRENDING_COLORS, FINISHES } from '../../utils/constants';
 import StarRating from '../common/StarRating';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
@@ -393,6 +393,47 @@ const ProductDetail = () => {
             </div>
           </div>
 
+          {/* Surface Sheen & Finish Selector */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ fontSize: '0.875rem', fontWeight: '600' }}>
+                Surface Sheen & Finish: <span style={{ color: 'var(--color-primary)', fontWeight: '700' }}>{selectedFinish}</span>
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                gap: '8px',
+                flexWrap: 'wrap',
+                maxHeight: '125px',
+                overflowY: 'auto',
+                padding: '2px',
+              }}
+              className="finish-scroll-container"
+            >
+              {FINISHES.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setSelectedFinish(f)}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 'var(--radius-btn)',
+                    border: selectedFinish === f ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                    backgroundColor: selectedFinish === f ? 'var(--color-primary-subtle)' : '#FFFFFF',
+                    color: selectedFinish === f ? 'var(--color-primary-dark)' : 'var(--color-text-primary)',
+                    fontWeight: selectedFinish === f ? '700' : '500',
+                    fontSize: '0.8125rem',
+                    cursor: 'pointer',
+                    transition: 'all var(--transition-fast)',
+                  }}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Size Selector */}
           <div>
             <div style={{ fontSize: '0.875rem', fontWeight: '600', marginBottom: '8px' }}>
@@ -729,6 +770,20 @@ const ProductDetail = () => {
       />
 
       <style>{`
+        .finish-scroll-container::-webkit-scrollbar {
+          width: 5px;
+        }
+        .finish-scroll-container::-webkit-scrollbar-track {
+          background: #F1F5F9;
+          border-radius: 4px;
+        }
+        .finish-scroll-container::-webkit-scrollbar-thumb {
+          background: #CBD5E1;
+          border-radius: 4px;
+        }
+        .finish-scroll-container::-webkit-scrollbar-thumb:hover {
+          background: var(--color-primary);
+        }
         @media (max-width: 900px) {
           .product-detail-layout {
             grid-template-columns: 1fr !important;

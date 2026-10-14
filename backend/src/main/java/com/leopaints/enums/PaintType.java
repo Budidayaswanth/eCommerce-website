@@ -9,5 +9,17 @@ public enum PaintType {
     WATERPROOF,
     WOOD_FINISH,
     DISTEMPER,
-    TEXTURE
+    TEXTURE,
+    ACRYLIC,
+    EPOXY,
+    PU_COATING,
+    WALL_PUTTY,
+    UNDERCOAT,
+    SEALER,
+    FLOOR_COAT,
+    ROOF_COAT,
+    METALLIC_COAT,
+    RUST_PREVENTIVE,
+    VARNISH,
+    CHALK_PAINT
 }
