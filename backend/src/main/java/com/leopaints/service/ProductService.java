@@ -14,6 +14,8 @@ import com.leopaints.exception.ResourceNotFoundException;
 import com.leopaints.mapper.ProductMapper;
 import com.leopaints.repository.CategoryRepository;
 import com.leopaints.repository.ProductRepository;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,28 +59,48 @@ public class ProductService {
             int page,
             int size,
             Long categoryId,
-            PaintType paintType,
-            PaintFinish finish,
+            String category,
+            String paintType,
+            String finish,
             BigDecimal minPrice,
             BigDecimal maxPrice,
+            BigDecimal minRating,
+            Boolean inStockOnly,
             String search,
             String sortBy
     ) {
         Sort sort = parseSort(sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
+        List<PaintType> parsedPaintTypes = parsePaintTypes(paintType);
+        List<PaintFinish> parsedFinishes = parsePaintFinishes(finish);
+
         Specification<Product> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.isTrue(root.get("isActive")));
 
+            Join<Product, Category> categoryJoin = null;
+
             if (categoryId != null) {
                 predicates.add(cb.equal(root.get("category").get("id"), categoryId));
+            } else if (category != null && !category.trim().isEmpty() && !"all".equalsIgnoreCase(category.trim())) {
+                String cleanCat = category.trim().toLowerCase();
+                if (cleanCat.matches("\\d+")) {
+                    predicates.add(cb.equal(root.get("category").get("id"), Long.parseLong(cleanCat)));
+                } else {
+                    categoryJoin = root.join("category", JoinType.LEFT);
+                    String pattern = "%" + cleanCat.replace("-", "%") + "%";
+                    predicates.add(cb.or(
+                            cb.like(cb.lower(categoryJoin.get("slug")), pattern),
+                            cb.like(cb.lower(categoryJoin.get("name")), pattern)
+                    ));
+                }
             }
-            if (paintType != null) {
-                predicates.add(cb.equal(root.get("paintType"), paintType));
+            if (!parsedPaintTypes.isEmpty()) {
+                predicates.add(root.get("paintType").in(parsedPaintTypes));
             }
-            if (finish != null) {
-                predicates.add(cb.equal(root.get("finish"), finish));
+            if (!parsedFinishes.isEmpty()) {
+                predicates.add(root.get("finish").in(parsedFinishes));
             }
             if (minPrice != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("sellingPrice"), minPrice));
@@ -86,11 +108,21 @@ public class ProductService {
             if (maxPrice != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("sellingPrice"), maxPrice));
             }
+            if (minRating != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("avgRating"), minRating));
+            }
+            if (Boolean.TRUE.equals(inStockOnly)) {
+                predicates.add(cb.greaterThan(root.get("stockQuantity"), 0));
+            }
             if (search != null && !search.trim().isEmpty()) {
                 String pattern = "%" + search.trim().toLowerCase() + "%";
+                if (categoryJoin == null) {
+                    categoryJoin = root.join("category", JoinType.LEFT);
+                }
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("name")), pattern),
-                        cb.like(cb.lower(root.get("description")), pattern)
+                        cb.like(cb.lower(root.get("description")), pattern),
+                        cb.like(cb.lower(categoryJoin.get("name")), pattern)
                 ));
             }
 
@@ -99,6 +131,38 @@ public class ProductService {
 
         Page<Product> productPage = productRepository.findAll(spec, pageable);
         return PagedResponse.from(productPage.map(productMapper::toResponse));
+    }
+
+    private List<PaintType> parsePaintTypes(String types) {
+        if (types == null || types.trim().isEmpty()) return java.util.Collections.emptyList();
+        List<PaintType> result = new ArrayList<>();
+        String[] parts = types.split(",");
+        for (String part : parts) {
+            String clean = part.trim().toUpperCase().replace(" ", "_").replace("-", "_");
+            for (PaintType pt : PaintType.values()) {
+                if (pt.name().equalsIgnoreCase(clean) || clean.contains(pt.name())) {
+                    if (!result.contains(pt)) result.add(pt);
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    private List<PaintFinish> parsePaintFinishes(String finishes) {
+        if (finishes == null || finishes.trim().isEmpty()) return java.util.Collections.emptyList();
+        List<PaintFinish> result = new ArrayList<>();
+        String[] parts = finishes.split(",");
+        for (String part : parts) {
+            String clean = part.trim().toUpperCase().replace(" ", "_").replace("-", "_");
+            for (PaintFinish pf : PaintFinish.values()) {
+                if (pf.name().equalsIgnoreCase(clean) || clean.contains(pf.name())) {
+                    if (!result.contains(pf)) result.add(pf);
+                    break;
+                }
+            }
+        }
+        return result;
     }
 
     @Transactional(readOnly = true)
@@ -118,7 +182,7 @@ public class ProductService {
     @Transactional(readOnly = true)
     public PagedResponse<ProductResponse> searchProducts(String query, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-        Page<Product> productPage = productRepository.searchByName(query, pageable);
+        Page<Product> productPage = productRepository.searchProducts(query, pageable);
         return PagedResponse.from(productPage.map(productMapper::toResponse));
     }
 

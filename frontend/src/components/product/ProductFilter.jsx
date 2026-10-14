@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CATEGORIES, PAINT_TYPES, FINISHES, TRENDING_COLORS } from '../../utils/constants';
 import ColorSwatch from './ColorSwatch';
 import Button from '../common/Button';
@@ -20,16 +20,58 @@ const ProductFilter = ({
   const [localColor, setLocalColor] = useState(filters.color || '');
   const [localInStockOnly, setLocalInStockOnly] = useState(filters.inStockOnly || false);
 
+  // Synchronize internal state whenever parent filters prop changes
+  useEffect(() => {
+    setLocalCategory(filters.category || 'all');
+    setLocalTypes(Array.isArray(filters.paintType) ? filters.paintType : (filters.paintType ? [filters.paintType] : []));
+    setLocalFinishes(Array.isArray(filters.finish) ? filters.finish : (filters.finish ? [filters.finish] : []));
+    setLocalMinPrice(filters.minPrice ?? '');
+    setLocalMaxPrice(filters.maxPrice ?? '');
+    setLocalRating(filters.minRating ?? '');
+    setLocalColor(filters.color || '');
+    setLocalInStockOnly(!!filters.inStockOnly);
+  }, [filters]);
+
+  const handleCategorySelect = (catSlug) => {
+    setLocalCategory(catSlug);
+    onFilterChange({ category: catSlug });
+  };
+
   const handleToggleType = (type) => {
-    setLocalTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    );
+    const updated = localTypes.includes(type)
+      ? localTypes.filter((t) => t !== type)
+      : [...localTypes, type];
+    setLocalTypes(updated);
+    onFilterChange({ paintType: updated });
   };
 
   const handleToggleFinish = (finish) => {
-    setLocalFinishes((prev) =>
-      prev.includes(finish) ? prev.filter((f) => f !== finish) : [...prev, finish]
-    );
+    const updated = localFinishes.includes(finish)
+      ? localFinishes.filter((f) => f !== finish)
+      : [...localFinishes, finish];
+    setLocalFinishes(updated);
+    onFilterChange({ finish: updated });
+  };
+
+  const handleInStockChange = (checked) => {
+    setLocalInStockOnly(checked);
+    onFilterChange({ inStockOnly: checked });
+  };
+
+  const handlePriceBlur = () => {
+    onFilterChange({ minPrice: localMinPrice, maxPrice: localMaxPrice });
+  };
+
+  const handleRatingSelect = (rating) => {
+    const updated = Number(localRating) === rating ? '' : rating;
+    setLocalRating(updated);
+    onFilterChange({ minRating: updated });
+  };
+
+  const handleColorSelect = (colName) => {
+    const updated = localColor === colName ? '' : colName;
+    setLocalColor(updated);
+    onFilterChange({ color: updated });
   };
 
   const handleApply = () => {
@@ -103,8 +145,8 @@ const ProductFilter = ({
             <input
               type="radio"
               name="filter-cat"
-              checked={localCategory === 'all'}
-              onChange={() => setLocalCategory('all')}
+              checked={localCategory === 'all' || !localCategory}
+              onChange={() => handleCategorySelect('all')}
             />
             All Categories
           </label>
@@ -116,8 +158,8 @@ const ProductFilter = ({
               <input
                 type="radio"
                 name="filter-cat"
-                checked={localCategory === cat.id || localCategory === cat.slug}
-                onChange={() => setLocalCategory(cat.id)}
+                checked={localCategory === cat.slug || localCategory === cat.id}
+                onChange={() => handleCategorySelect(cat.slug)}
               />
               {cat.name}
             </label>
@@ -134,7 +176,7 @@ const ProductFilter = ({
           <input
             type="checkbox"
             checked={localInStockOnly}
-            onChange={(e) => setLocalInStockOnly(e.target.checked)}
+            onChange={(e) => handleInStockChange(e.target.checked)}
           />
           <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#16A34A', display: 'inline-block' }} />
@@ -198,6 +240,8 @@ const ProductFilter = ({
             placeholder="Min"
             value={localMinPrice}
             onChange={(e) => setLocalMinPrice(e.target.value)}
+            onBlur={handlePriceBlur}
+            onKeyDown={(e) => { if (e.key === 'Enter') handlePriceBlur(); }}
             style={{
               width: '100%',
               height: '36px',
@@ -213,6 +257,8 @@ const ProductFilter = ({
             placeholder="Max"
             value={localMaxPrice}
             onChange={(e) => setLocalMaxPrice(e.target.value)}
+            onBlur={handlePriceBlur}
+            onKeyDown={(e) => { if (e.key === 'Enter') handlePriceBlur(); }}
             style={{
               width: '100%',
               height: '36px',
@@ -238,7 +284,7 @@ const ProductFilter = ({
               hexCode={col.hex}
               isSelected={localColor === col.name}
               size={30}
-              onClick={() => setLocalColor(localColor === col.name ? '' : col.name)}
+              onClick={() => handleColorSelect(col.name)}
             />
           ))}
         </div>
@@ -259,7 +305,7 @@ const ProductFilter = ({
                 type="radio"
                 name="filter-rating"
                 checked={Number(localRating) === stars}
-                onChange={() => setLocalRating(stars)}
+                onChange={() => handleRatingSelect(stars)}
               />
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#B45309' }}>
                 {stars} <RiStarFill color="#FFD700" /> & above

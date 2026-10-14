@@ -46,7 +46,39 @@ const productService = {
    * Fetch paginated & filtered products from real backend
    */
   async getProducts(params = {}) {
-    const response = await api.get('/products', { params });
+    const cleanParams = {};
+    if (params.page !== undefined && params.page !== '') cleanParams.page = params.page;
+    if (params.size !== undefined && params.size !== '') cleanParams.size = params.size;
+    if (params.categoryId) cleanParams.categoryId = params.categoryId;
+    if (params.category && params.category !== 'all') cleanParams.category = params.category;
+    if (params.paintType && (Array.isArray(params.paintType) ? params.paintType.length > 0 : params.paintType)) {
+      cleanParams.paintType = Array.isArray(params.paintType) ? params.paintType.join(',') : params.paintType;
+    }
+    if (params.finish && (Array.isArray(params.finish) ? params.finish.length > 0 : params.finish)) {
+      cleanParams.finish = Array.isArray(params.finish) ? params.finish.join(',') : params.finish;
+    }
+    if (params.minPrice !== '' && params.minPrice !== null && params.minPrice !== undefined) {
+      cleanParams.minPrice = params.minPrice;
+    }
+    if (params.maxPrice !== '' && params.maxPrice !== null && params.maxPrice !== undefined) {
+      cleanParams.maxPrice = params.maxPrice;
+    }
+    if (params.minRating !== '' && params.minRating !== null && params.minRating !== undefined) {
+      cleanParams.minRating = params.minRating;
+    }
+    if (params.inStockOnly) {
+      cleanParams.inStockOnly = true;
+    }
+    if (params.search && params.search.trim()) {
+      cleanParams.search = params.search.trim();
+    }
+    if (params.sortBy) {
+      cleanParams.sortBy = params.sortBy;
+    } else if (params.sort) {
+      cleanParams.sortBy = params.sort;
+    }
+
+    const response = await api.get('/products', { params: cleanParams });
     // Handles { success: true, data: { content: [...] } } or direct array
     const data = response.data?.data || response.data;
     if (data?.content && Array.isArray(data.content)) {
@@ -70,10 +102,10 @@ const productService = {
   /**
    * Real backend product search
    */
-  async searchProducts(query) {
+  async searchProducts(query, page = 0, size = 12) {
     if (!query || !query.trim()) return [];
     const response = await api.get('/products/search', {
-      params: { q: query.trim() },
+      params: { q: query.trim(), page, size },
     });
     const data = response.data?.data || response.data;
     if (data?.content && Array.isArray(data.content)) {

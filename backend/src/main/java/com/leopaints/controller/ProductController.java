@@ -28,15 +28,18 @@ public class ProductController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size,
             @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) PaintType paintType,
-            @RequestParam(required = false) PaintFinish finish,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String paintType,
+            @RequestParam(required = false) String finish,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) BigDecimal minRating,
+            @RequestParam(required = false) Boolean inStockOnly,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String sortBy
     ) {
         PagedResponse<ProductResponse> response = productService.getAllProducts(
-                page, size, categoryId, paintType, finish, minPrice, maxPrice, search, sortBy
+                page, size, categoryId, category, paintType, finish, minPrice, maxPrice, minRating, inStockOnly, search, sortBy
         );
         return ResponseEntity.ok(ApiResponse.success(response));
     }
