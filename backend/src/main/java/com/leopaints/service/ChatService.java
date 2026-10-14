@@ -95,7 +95,11 @@ public class ChatService {
                 throw new UnauthorizedException("Not authorized to view this chat session");
             }
         }
-        return messages.stream()
+        // Bound chat session context window to the latest 100 messages to prevent memory bloat
+        int total = messages.size();
+        List<ChatMessage> contextWindow = total > 100 ? messages.subList(total - 100, total) : messages;
+
+        return contextWindow.stream()
                 .map(chatMessageMapper::toResponse)
                 .toList();
     }

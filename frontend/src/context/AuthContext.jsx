@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useMemo } from 'react';
 import authService from '../services/authService';
 import { STORAGE_KEYS } from '../utils/constants';
 import toast from 'react-hot-toast';
@@ -164,22 +164,32 @@ export const AuthProvider = ({ children }) => {
   const openLoginModal = () => dispatch({ type: 'SET_LOGIN_MODAL', payload: true });
   const closeLoginModal = () => dispatch({ type: 'SET_LOGIN_MODAL', payload: false });
 
-  const value = {
-    user: state.user,
-    token: state.token,
-    isAuthenticated: state.isAuthenticated,
-    isAdmin: state.isAdmin,
-    isLoading: state.isLoading,
-    isLoginModalOpen: state.isLoginModalOpen,
-    sendOtp,
-    resendOtp,
-    verifyOtp,
-    adminLogin,
-    logout,
-    updateUser,
-    openLoginModal,
-    closeLoginModal,
-  };
+  const value = useMemo(
+    () => ({
+      user: state.user,
+      token: state.token,
+      isAuthenticated: state.isAuthenticated,
+      isAdmin: state.isAdmin,
+      isLoading: state.isLoading,
+      isLoginModalOpen: state.isLoginModalOpen,
+      sendOtp,
+      resendOtp,
+      verifyOtp,
+      adminLogin,
+      logout,
+      updateUser,
+      openLoginModal,
+      closeLoginModal,
+    }),
+    [
+      state.user,
+      state.token,
+      state.isAuthenticated,
+      state.isAdmin,
+      state.isLoading,
+      state.isLoginModalOpen,
+    ]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

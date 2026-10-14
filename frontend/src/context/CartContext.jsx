@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useMemo } from 'react';
 import cartService from '../services/cartService';
 import toast from 'react-hot-toast';
 
@@ -157,25 +157,38 @@ export const CartProvider = ({ children }) => {
   const openDrawer = () => dispatch({ type: 'TOGGLE_DRAWER', payload: true });
   const closeDrawer = () => dispatch({ type: 'TOGGLE_DRAWER', payload: false });
 
-  const value = {
-    items: state.items,
-    totalItems: state.totalItems,
-    totalAmount: state.totalAmount,
-    appliedCoupon: state.appliedCoupon,
-    couponDiscount: state.couponDiscount,
-    deliveryCharge: state.deliveryCharge,
-    finalAmount: state.finalAmount,
-    isLoading: state.isLoading,
-    isDrawerOpen: state.isDrawerOpen,
-    addToCart,
-    updateQuantity,
-    removeFromCart,
-    clearCart,
-    applyCoupon,
-    removeCoupon,
-    openDrawer,
-    closeDrawer,
-  };
+  const value = useMemo(
+    () => ({
+      items: state.items,
+      totalItems: state.totalItems,
+      totalAmount: state.totalAmount,
+      appliedCoupon: state.appliedCoupon,
+      couponDiscount: state.couponDiscount,
+      deliveryCharge: state.deliveryCharge,
+      finalAmount: state.finalAmount,
+      isLoading: state.isLoading,
+      isDrawerOpen: state.isDrawerOpen,
+      addToCart,
+      updateQuantity,
+      removeFromCart,
+      clearCart,
+      applyCoupon,
+      removeCoupon,
+      openDrawer,
+      closeDrawer,
+    }),
+    [
+      state.items,
+      state.totalItems,
+      state.totalAmount,
+      state.appliedCoupon,
+      state.couponDiscount,
+      state.deliveryCharge,
+      state.finalAmount,
+      state.isLoading,
+      state.isDrawerOpen,
+    ]
+  );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
