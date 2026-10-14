@@ -151,8 +151,8 @@ const ProductDetail = () => {
       setNewReviewTitle('');
       setNewReviewComment('');
       toast.success('Thank you! Review submitted for verification.');
-    } catch {
-      toast.error('Failed to submit review');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to submit review');
     } finally {
       setSubmittingReview(false);
     }

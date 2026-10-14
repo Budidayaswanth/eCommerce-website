@@ -110,8 +110,8 @@ const ProductManager = () => {
       }
       setIsModalOpen(false);
       fetchProducts();
-    } catch {
-      toast.error('Failed to save product');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save product');
     }
   };
 

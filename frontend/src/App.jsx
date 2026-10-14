@@ -23,6 +23,7 @@ const WishlistPage = lazy(() => import('./components/wishlist/WishlistPage'));
 const ProfilePage = lazy(() => import('./components/profile/ProfilePage'));
 const OrderDetailPage = lazy(() => import('./pages/user/OrderDetailPage'));
 const PaymentStatusPage = lazy(() => import('./pages/user/PaymentStatusPage'));
+const NotFoundPage = lazy(() => import('./pages/user/NotFoundPage'));
 
 // Admin Pages (code-split to save mobile bandwidth)
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
@@ -143,8 +144,10 @@ function App() {
                 <Route path="reviews" element={<AdminReviewsPage />} />
               </Route>
 
-              {/* Fallback to Home */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              {/* 404 Not Found Page */}
+              <Route element={<MainLayout />}>
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
             </Routes>
           </Suspense>
         </Router>

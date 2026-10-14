@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ReviewRequest {
 
+    @NotNull(message = "Product ID is required")
     private Long productId;
 
     @NotNull(message = "Rating is required")

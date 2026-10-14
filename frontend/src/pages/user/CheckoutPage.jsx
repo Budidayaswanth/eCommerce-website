@@ -34,7 +34,7 @@ const PAYMENT_METHODS = [
 ];
 
 const CheckoutPage = () => {
-  const { items, totalAmount, couponDiscount, deliveryCharge, finalAmount, clearCart } = useCart();
+  const { items, totalAmount, appliedCoupon, couponDiscount, deliveryCharge, finalAmount, clearCart } = useCart();
   const { user, isAuthenticated, openLoginModal } = useAuth();
   const navigate = useNavigate();
 
@@ -210,6 +210,8 @@ const CheckoutPage = () => {
 
       const orderPayload = {
         addressId: finalAddressId,
+        couponCode: appliedCoupon?.code || undefined,
+        notes: `Payment Method: ${paymentMethod}${appliedCoupon ? ` | Coupon Applied: ${appliedCoupon.code}` : ''}`,
         paymentMethod,
         items: items.map((i) => ({
           name: i.product.name,
