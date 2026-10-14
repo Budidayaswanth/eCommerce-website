@@ -1,16 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import Button from '../common/Button';
 import { RiArrowRightLine } from 'react-icons/ri';
+import api from '../../services/api';
 
 // Import Swiper styles
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
-const SLIDES = [
+const DEFAULT_SLIDES = [
   {
     id: 1,
     title: 'Royal Elegance for Majestic Living',
@@ -41,6 +42,36 @@ const SLIDES = [
 ];
 
 const HeroBanner = () => {
+  const [slides, setSlides] = useState(DEFAULT_SLIDES);
+
+  useEffect(() => {
+    let isCurrent = true;
+    api
+      .get('/banners')
+      .then((res) => {
+        const list = res.data?.data || res.data;
+        if (isCurrent && Array.isArray(list) && list.length > 0) {
+          const dynamicSlides = list.map((b, idx) => ({
+            id: b.id || idx,
+            title: b.title,
+            subtitle: b.subtitle || 'Transform your walls with Leo Paints high-performance coatings.',
+            cta: b.ctaText || 'Explore Formulations',
+            link: b.linkUrl?.replace('/products', '/explore') || '/explore',
+            image: b.imageUrl || DEFAULT_SLIDES[idx % DEFAULT_SLIDES.length].image,
+            tag: b.tag || 'FEATURED OFFER',
+          }));
+          setSlides(dynamicSlides);
+        }
+      })
+      .catch(() => {
+        // Fallback to DEFAULT_SLIDES
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
   return (
     <div
       style={{
@@ -62,7 +93,7 @@ const HeroBanner = () => {
         style={{ width: '100%', height: '500px' }}
         className="hero-swiper-container"
       >
-        {SLIDES.map((slide) => (
+        {slides.map((slide) => (
           <SwiperSlide key={slide.id}>
             <div
               style={{

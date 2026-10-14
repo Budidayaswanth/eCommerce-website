@@ -36,13 +36,14 @@ public class OrderController {
     }
 
     @GetMapping
-    @Operation(summary = "Get current user's orders")
+    @Operation(summary = "Get current user's orders (active or archived)")
     public ResponseEntity<ApiResponse<PagedResponse<OrderResponse>>> getUserOrders(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false, defaultValue = "false") Boolean isArchived,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        PagedResponse<OrderResponse> response = orderService.getUserOrders(principal.getId(), page, size);
+        PagedResponse<OrderResponse> response = orderService.getUserOrders(principal.getId(), isArchived, page, size);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -66,5 +67,25 @@ public class OrderController {
         String reason = (body != null && body.containsKey("reason")) ? body.get("reason") : "Cancelled by user";
         OrderResponse response = orderService.cancelOrder(id, principal.getId(), reason);
         return ResponseEntity.ok(ApiResponse.success(response, "Order cancelled successfully"));
+    }
+
+    @PutMapping("/{id}/archive")
+    @Operation(summary = "Archive an order from active history")
+    public ResponseEntity<ApiResponse<OrderResponse>> archiveOrder(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        OrderResponse response = orderService.archiveOrder(id, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(response, "Order archived successfully"));
+    }
+
+    @PutMapping("/{id}/unarchive")
+    @Operation(summary = "Restore an archived order back to active history")
+    public ResponseEntity<ApiResponse<OrderResponse>> unarchiveOrder(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        OrderResponse response = orderService.unarchiveOrder(id, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(response, "Order restored to active history"));
     }
 }

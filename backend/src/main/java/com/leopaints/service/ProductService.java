@@ -14,9 +14,11 @@ import com.leopaints.exception.ResourceNotFoundException;
 import com.leopaints.mapper.ProductMapper;
 import com.leopaints.repository.CategoryRepository;
 import com.leopaints.repository.ProductRepository;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -74,8 +76,44 @@ public class ProductService {
 
         List<PaintType> parsedPaintTypes = parsePaintTypes(paintType);
         List<PaintFinish> parsedFinishes = parsePaintFinishes(finish);
+        List<String> searchTokens = extractTokens(search);
 
-        Specification<Product> spec = (root, query, cb) -> {
+        Specification<Product> spec = createFilterSpecification(
+                categoryId, category, parsedPaintTypes, parsedFinishes,
+                minPrice, maxPrice, minRating, inStockOnly, searchTokens, false
+        );
+
+        Page<Product> productPage = productRepository.findAll(spec, pageable);
+
+        // Relative fallback: If search was provided with multiple words and returned 0 products on page 0,
+        // relax search tokens (ANY token match) while maintaining the other user filters
+        if (productPage.isEmpty() && page == 0 && searchTokens.size() > 1) {
+            Specification<Product> relaxedSpec = createFilterSpecification(
+                    categoryId, category, parsedPaintTypes, parsedFinishes,
+                    minPrice, maxPrice, minRating, inStockOnly, searchTokens, true
+            );
+            Page<Product> relaxedPage = productRepository.findAll(relaxedSpec, pageable);
+            if (!relaxedPage.isEmpty()) {
+                productPage = relaxedPage;
+            }
+        }
+
+        return PagedResponse.from(productPage.map(productMapper::toResponse));
+    }
+
+    private Specification<Product> createFilterSpecification(
+            Long categoryId,
+            String category,
+            List<PaintType> parsedPaintTypes,
+            List<PaintFinish> parsedFinishes,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            BigDecimal minRating,
+            Boolean inStockOnly,
+            List<String> searchTokens,
+            boolean relaxedSearch
+    ) {
+        return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.isTrue(root.get("isActive")));
 
@@ -88,7 +126,7 @@ public class ProductService {
                 if (cleanCat.matches("\\d+")) {
                     predicates.add(cb.equal(root.get("category").get("id"), Long.parseLong(cleanCat)));
                 } else {
-                    categoryJoin = root.join("category", JoinType.LEFT);
+                    categoryJoin = getOrCreateCategoryJoin(root);
                     String pattern = "%" + cleanCat.replace("-", "%") + "%";
                     predicates.add(cb.or(
                             cb.like(cb.lower(categoryJoin.get("slug")), pattern),
@@ -96,6 +134,7 @@ public class ProductService {
                     ));
                 }
             }
+
             if (!parsedPaintTypes.isEmpty()) {
                 predicates.add(root.get("paintType").in(parsedPaintTypes));
             }
@@ -114,23 +153,90 @@ public class ProductService {
             if (Boolean.TRUE.equals(inStockOnly)) {
                 predicates.add(cb.greaterThan(root.get("stockQuantity"), 0));
             }
-            if (search != null && !search.trim().isEmpty()) {
-                String pattern = "%" + search.trim().toLowerCase() + "%";
+
+            if (!searchTokens.isEmpty()) {
                 if (categoryJoin == null) {
-                    categoryJoin = root.join("category", JoinType.LEFT);
+                    categoryJoin = getOrCreateCategoryJoin(root);
                 }
-                predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("name")), pattern),
-                        cb.like(cb.lower(root.get("description")), pattern),
-                        cb.like(cb.lower(categoryJoin.get("name")), pattern)
-                ));
+                List<Predicate> tokenPredicates = new ArrayList<>();
+                for (String token : searchTokens) {
+                    tokenPredicates.add(buildTokenPredicate(root, categoryJoin, cb, token));
+                }
+
+                if (relaxedSearch) {
+                    predicates.add(cb.or(tokenPredicates.toArray(new Predicate[0])));
+                } else {
+                    predicates.add(cb.and(tokenPredicates.toArray(new Predicate[0])));
+                }
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
 
-        Page<Product> productPage = productRepository.findAll(spec, pageable);
-        return PagedResponse.from(productPage.map(productMapper::toResponse));
+    private List<String> extractTokens(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        String clean = query.trim().toLowerCase();
+        String[] parts = clean.split("[\\s,;+&|/\\-]+");
+        List<String> tokens = new ArrayList<>();
+        for (String part : parts) {
+            String p = part.trim();
+            if (!p.isEmpty()) {
+                tokens.add(p);
+            }
+        }
+        return tokens;
+    }
+
+    private Join<Product, Category> getOrCreateCategoryJoin(Root<Product> root) {
+        for (Join<Product, ?> join : root.getJoins()) {
+            if ("category".equals(join.getAttribute().getName())) {
+                @SuppressWarnings("unchecked")
+                Join<Product, Category> categoryJoin = (Join<Product, Category>) join;
+                return categoryJoin;
+            }
+        }
+        return root.join("category", JoinType.LEFT);
+    }
+
+    private Predicate buildTokenPredicate(
+            Root<Product> root,
+            Join<Product, Category> categoryJoin,
+            CriteriaBuilder cb,
+            String token
+    ) {
+        String pattern = "%" + token + "%";
+        List<Predicate> tokenMatches = new ArrayList<>();
+        tokenMatches.add(cb.like(cb.lower(root.get("name")), pattern));
+        tokenMatches.add(cb.like(cb.lower(root.get("description")), pattern));
+        if (categoryJoin != null) {
+            tokenMatches.add(cb.like(cb.lower(categoryJoin.get("name")), pattern));
+            tokenMatches.add(cb.like(cb.lower(categoryJoin.get("slug")), pattern));
+        }
+
+        // Match PaintType enum
+        for (PaintType pt : PaintType.values()) {
+            String ptName = pt.name().toLowerCase();
+            String ptClean = ptName.replace("_", "");
+            if (ptName.contains(token) || token.contains(ptClean)) {
+                tokenMatches.add(cb.equal(root.get("paintType"), pt));
+                break;
+            }
+        }
+
+        // Match PaintFinish enum
+        for (PaintFinish pf : PaintFinish.values()) {
+            String pfName = pf.name().toLowerCase();
+            String pfClean = pfName.replace("_", "");
+            if (pfName.contains(token) || token.contains(pfClean)) {
+                tokenMatches.add(cb.equal(root.get("finish"), pf));
+                break;
+            }
+        }
+
+        return cb.or(tokenMatches.toArray(new Predicate[0]));
     }
 
     private List<PaintType> parsePaintTypes(String types) {
@@ -181,8 +287,52 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public PagedResponse<ProductResponse> searchProducts(String query, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-        Page<Product> productPage = productRepository.searchProducts(query, pageable);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("avgRating").descending().and(Sort.by("id").descending()));
+        List<String> tokens = extractTokens(query);
+
+        if (tokens.isEmpty()) {
+            Page<Product> fallback = productRepository.findByIsActiveTrue(pageable);
+            return PagedResponse.from(fallback.map(productMapper::toResponse));
+        }
+
+        // Phase 1: Strict Multi-token Match (ALL tokens must match across product name, description, category, paintType, finish)
+        Specification<Product> strictSpec = (root, q, cb) -> {
+            Join<Product, Category> categoryJoin = getOrCreateCategoryJoin(root);
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.isTrue(root.get("isActive")));
+
+            for (String token : tokens) {
+                predicates.add(buildTokenPredicate(root, categoryJoin, cb, token));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<Product> productPage = productRepository.findAll(strictSpec, pageable);
+
+        // Phase 2: Relative Matching Fallback (if strict match has 0 results, match ANY token)
+        if (productPage.isEmpty() && tokens.size() > 1) {
+            Specification<Product> relaxedSpec = (root, q, cb) -> {
+                Join<Product, Category> categoryJoin = getOrCreateCategoryJoin(root);
+                List<Predicate> orPredicates = new ArrayList<>();
+                for (String token : tokens) {
+                    orPredicates.add(buildTokenPredicate(root, categoryJoin, cb, token));
+                }
+
+                return cb.and(
+                        cb.isTrue(root.get("isActive")),
+                        cb.or(orPredicates.toArray(new Predicate[0]))
+                );
+            };
+
+            productPage = productRepository.findAll(relaxedSpec, pageable);
+        }
+
+        // Phase 3: Relative Popular Fallback (if still empty, e.g. unknown search term, return top active paints)
+        if (productPage.isEmpty()) {
+            productPage = productRepository.findByIsActiveTrue(pageable);
+        }
+
         return PagedResponse.from(productPage.map(productMapper::toResponse));
     }
 

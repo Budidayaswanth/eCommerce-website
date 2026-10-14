@@ -36,6 +36,22 @@ const orderService = {
     const response = await api.put(`/orders/${orderId}/cancel`, { reason });
     return response.data?.data || response.data;
   },
+
+  /**
+   * Archive an order
+   */
+  async archiveOrder(orderId) {
+    const response = await api.put(`/orders/${orderId}/archive`);
+    return response.data?.data || response.data;
+  },
+
+  /**
+   * Unarchive / Restore an order back to active history
+   */
+  async unarchiveOrder(orderId) {
+    const response = await api.put(`/orders/${orderId}/unarchive`);
+    return response.data?.data || response.data;
+  },
 };
 
 export default orderService;

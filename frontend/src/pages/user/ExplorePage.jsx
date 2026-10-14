@@ -18,9 +18,22 @@ const ExplorePage = () => {
   const sortParam = searchParams.get('sort') || 'featured';
 
   const [products, setProducts] = useState([]);
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [searchInput, setSearchInput] = useState(searchQuery);
+
+  // Fetch recommended formulations for fallback/empty search states
+  useEffect(() => {
+    productService
+      .getFeaturedProducts()
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setRecommendedProducts(data.slice(0, 4));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const [filters, setFilters] = useState({
     category: category || searchParams.get('category') || 'all',
@@ -437,6 +450,8 @@ const ExplorePage = () => {
             products={products}
             isLoading={loading}
             onClearFilters={handleClearFilters}
+            recommendedProducts={recommendedProducts}
+            searchQuery={filters.search}
           />
         </div>
       </div>

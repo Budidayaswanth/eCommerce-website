@@ -16,7 +16,8 @@ import java.util.List;
 @Table(name = "orders", indexes = {
     @Index(name = "idx_orders_user_id", columnList = "user_id"),
     @Index(name = "idx_orders_status", columnList = "status"),
-    @Index(name = "idx_orders_placed_at", columnList = "placed_at")
+    @Index(name = "idx_orders_placed_at", columnList = "placed_at"),
+    @Index(name = "idx_orders_is_archived", columnList = "is_archived")
 })
 @Getter
 @Setter
@@ -81,6 +82,13 @@ public class Order {
 
     @Column(name = "delivered_at")
     private LocalDateTime deliveredAt;
+
+    @Column(name = "is_archived", nullable = false)
+    @Builder.Default
+    private Boolean isArchived = false;
+
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")

@@ -36,5 +36,7 @@ public class OrderResponse {
     private String notes;
     private LocalDateTime placedAt;
     private LocalDateTime deliveredAt;
+    private Boolean isArchived;
+    private LocalDateTime archivedAt;
     private LocalDateTime updatedAt;
 }

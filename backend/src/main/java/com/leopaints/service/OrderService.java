@@ -167,9 +167,39 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public PagedResponse<OrderResponse> getUserOrders(Long userId, int page, int size) {
+        return getUserOrders(userId, false, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<OrderResponse> getUserOrders(Long userId, Boolean isArchived, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Order> orderPage = orderRepository.findByUserIdOrderByPlacedAtDesc(userId, pageable);
+        boolean archived = Boolean.TRUE.equals(isArchived);
+        Page<Order> orderPage = orderRepository.findByUserIdAndIsArchivedOrderByPlacedAtDesc(userId, archived, pageable);
         return PagedResponse.from(orderPage.map(orderMapper::toResponse));
+    }
+
+    @Transactional
+    public OrderResponse archiveOrder(Long orderId, Long userId) {
+        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+        order.setIsArchived(true);
+        order.setArchivedAt(LocalDateTime.now());
+        Order saved = orderRepository.save(order);
+        auditService.log("ORDER", saved.getId(), "ARCHIVE", String.valueOf(userId), "isArchived: false", "isArchived: true", null);
+        log.info("Order id={} archived by user={}", orderId, userId);
+        return orderMapper.toResponse(saved);
+    }
+
+    @Transactional
+    public OrderResponse unarchiveOrder(Long orderId, Long userId) {
+        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+        order.setIsArchived(false);
+        order.setArchivedAt(null);
+        Order saved = orderRepository.save(order);
+        auditService.log("ORDER", saved.getId(), "UNARCHIVE", String.valueOf(userId), "isArchived: true", "isArchived: false", null);
+        log.info("Order id={} unarchived by user={}", orderId, userId);
+        return orderMapper.toResponse(saved);
     }
 
     @Transactional(readOnly = true)
