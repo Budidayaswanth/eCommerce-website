@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import Toast from './components/common/Toast';
 import Loader from './components/common/Loader';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Layouts (loaded synchronously as shell)
 import MainLayout from './components/layout/MainLayout';
@@ -71,7 +72,8 @@ const ProtectedAdminRoute = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
       <CartProvider>
         <Router>
           <Suspense fallback={<Loader fullPage message="Loading LEO PAINTS experience..." />}>
@@ -151,6 +153,7 @@ function App() {
         <Toast />
       </CartProvider>
     </AuthProvider>
+  </ErrorBoundary>
   );
 }
 

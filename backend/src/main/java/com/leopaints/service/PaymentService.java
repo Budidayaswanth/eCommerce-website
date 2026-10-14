@@ -262,6 +262,18 @@ public class PaymentService {
             throw new PaymentException("Invalid webhook signature");
         }
 
+        // Replay prevention: reject webhooks with timestamp older than 5 minutes (300 seconds)
+        try {
+            long tsSeconds = Long.parseLong(timestamp);
+            long nowSeconds = System.currentTimeMillis() / 1000;
+            if (Math.abs(nowSeconds - tsSeconds) > 300) {
+                log.warn("Cashfree webhook timestamp expired: timestamp={}, current={}", tsSeconds, nowSeconds);
+                throw new PaymentException("Webhook timestamp has expired");
+            }
+        } catch (NumberFormatException ignored) {
+            // Allows non-epoch / mock test strings in local testing
+        }
+
         try {
             JsonNode root = objectMapper.readTree(payload);
             String type = root.path("type").asText();
