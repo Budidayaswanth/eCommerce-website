@@ -4,11 +4,16 @@ import { RiCheckLine } from 'react-icons/ri';
 const ColorSwatch = ({
   colorName,
   hexCode,
+  secondaryHex = null,
   isSelected = false,
   onClick,
   size = 36,
   showLabel = false,
 }) => {
+  const backgroundStyle = secondaryHex
+    ? `linear-gradient(135deg, ${hexCode} 50%, ${secondaryHex} 50%)`
+    : hexCode;
+
   return (
     <div
       style={{
@@ -19,14 +24,14 @@ const ColorSwatch = ({
         cursor: 'pointer',
       }}
       onClick={onClick}
-      title={colorName}
+      title={secondaryHex ? `${colorName} (Mixed Dual Tint)` : colorName}
     >
       <div
         style={{
           width: `${size}px`,
           height: `${size}px`,
           borderRadius: '50%',
-          backgroundColor: hexCode,
+          background: backgroundStyle,
           border: isSelected ? '3px solid var(--color-primary)' : '2px solid rgba(0,0,0,0.15)',
           boxShadow: isSelected ? '0 0 0 2px var(--color-secondary)' : '0 1px 3px rgba(0,0,0,0.1)',
           display: 'flex',

@@ -18,6 +18,7 @@ const ProductFilter = ({
   const [localMaxPrice, setLocalMaxPrice] = useState(filters.maxPrice || '');
   const [localRating, setLocalRating] = useState(filters.minRating || '');
   const [localColor, setLocalColor] = useState(filters.color || '');
+  const [localInStockOnly, setLocalInStockOnly] = useState(filters.inStockOnly || false);
 
   const handleToggleType = (type) => {
     setLocalTypes((prev) =>
@@ -40,6 +41,7 @@ const ProductFilter = ({
       maxPrice: localMaxPrice,
       minRating: localRating,
       color: localColor,
+      inStockOnly: localInStockOnly,
     });
     if (onCloseMobile) onCloseMobile();
   };
@@ -52,6 +54,7 @@ const ProductFilter = ({
     setLocalMaxPrice('');
     setLocalRating('');
     setLocalColor('');
+    setLocalInStockOnly(false);
     onClearFilters();
     if (onCloseMobile) onCloseMobile();
   };
@@ -120,6 +123,24 @@ const ProductFilter = ({
             </label>
           ))}
         </div>
+      </div>
+
+      {/* Stock Availability */}
+      <div>
+        <div style={{ fontWeight: '600', fontSize: '0.875rem', marginBottom: '8px', color: 'var(--color-text-primary)' }}>
+          Availability
+        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={localInStockOnly}
+            onChange={(e) => setLocalInStockOnly(e.target.checked)}
+          />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#16A34A', display: 'inline-block' }} />
+            In Stock Only
+          </span>
+        </label>
       </div>
 
       {/* Paint Types */}
@@ -257,8 +278,18 @@ const ProductFilter = ({
 
   return (
     <>
-      {/* Desktop Filter Sidebar */}
-      <div style={{ width: '280px', flexShrink: 0 }} className="desktop-filter-panel">
+      {/* Desktop Filter Sidebar (Sticky while scrolling products) */}
+      <div
+        style={{
+          width: '280px',
+          flexShrink: 0,
+          position: 'sticky',
+          top: '20px',
+          maxHeight: 'calc(100vh - 40px)',
+          overflowY: 'auto',
+        }}
+        className="desktop-filter-panel"
+      >
         {filterContent}
       </div>
 

@@ -6,6 +6,7 @@ import wishlistService from '../../services/wishlistService';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatPrice, calculateDiscount, formatDate } from '../../utils/formatters';
+import { TRENDING_COLORS } from '../../utils/constants';
 import StarRating from '../common/StarRating';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
@@ -42,6 +43,13 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [showCalculator, setShowCalculator] = useState(false);
 
+  // Shade selection & custom mixed tinting
+  const [selectedColor, setSelectedColor] = useState('Royal Velvet Navy');
+  const [selectedColorHex, setSelectedColorHex] = useState('#1A237E');
+  const [isMixedColorEnabled, setIsMixedColorEnabled] = useState(false);
+  const [selectedMixedColor, setSelectedMixedColor] = useState('Imperial Gold');
+  const [selectedMixedColorHex, setSelectedMixedColorHex] = useState('#FFD700');
+
   // New review form
   const [newReviewRating, setNewReviewRating] = useState(5);
   const [newReviewTitle, setNewReviewTitle] = useState('');
@@ -56,6 +64,8 @@ const ProductDetail = () => {
         setProduct(prod);
         setSelectedImage(prod.images?.[0] || prod.image);
         setSelectedFinish(prod.finish || 'Matte');
+        if (prod.color) setSelectedColor(prod.color);
+        if (prod.colorHex) setSelectedColorHex(prod.colorHex);
         if (prod.sizes?.length) setSelectedSize(prod.sizes[0]);
 
         // Fetch reviews
@@ -82,6 +92,9 @@ const ProductDetail = () => {
   if (loading) return <Loader fullPage message="Loading paint details..." />;
   if (!product) return <div>Product not found</div>;
 
+  const isOutOfStock = product.stockQuantity === 0 || product.inStock === false;
+  const isLowStock = !isOutOfStock && product.stockQuantity > 0 && product.stockQuantity <= 5;
+
   const discountVal = product.discount || calculateDiscount(product.mrp, product.price);
   const savings = product.mrp ? Math.max(0, product.mrp - product.price) : 0;
 
@@ -104,7 +117,14 @@ const ProductDetail = () => {
   };
 
   const handleAddToCart = () => {
-    addToCart(product, quantity, selectedSize, selectedFinish);
+    if (isOutOfStock) return;
+    const itemToAdd = {
+      ...product,
+      color: isMixedColorEnabled ? `${selectedColor} + ${selectedMixedColor} (Dual Tint)` : selectedColor,
+      colorHex: selectedColorHex,
+      mixedColorHex: isMixedColorEnabled ? selectedMixedColorHex : null,
+    };
+    addToCart(itemToAdd, quantity, selectedSize, selectedFinish);
   };
 
   const handleSubmitReview = async (e) => {
@@ -253,26 +273,125 @@ const ProductDetail = () => {
                 You Save {formatPrice(savings)} ({discountVal}% OFF)
               </span>
             )}
+
+            {/* Availability Status Badge */}
+            <div style={{ width: '100%', marginTop: '6px' }}>
+              {isOutOfStock ? (
+                <span style={{ fontSize: '0.875rem', fontWeight: '700', color: '#DC2626', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#DC2626' }} />
+                  Currently Out of Stock — Factory Replenishment in Progress
+                </span>
+              ) : isLowStock ? (
+                <span style={{ fontSize: '0.875rem', fontWeight: '700', color: '#D97706', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#D97706' }} />
+                  High Demand: Only {product.stockQuantity} units left in regional warehouse
+                </span>
+              ) : (
+                <span style={{ fontSize: '0.875rem', fontWeight: '700', color: '#16A34A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#16A34A' }} />
+                  In Stock • Dispatch Ready (2-3 business days delivery)
+                </span>
+              )}
+            </div>
+
             <div style={{ width: '100%', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
               Inclusive of all taxes. Free doorstep shipping on orders above ₹999.
             </div>
           </div>
 
-          {/* Color preview */}
-          {product.color && (
-            <div>
-              <div style={{ fontSize: '0.875rem', fontWeight: '600', marginBottom: '8px' }}>
-                Shade: <span style={{ color: 'var(--color-primary)' }}>{product.color}</span>
+          {/* Color & Mixed Tint Selector */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ fontSize: '0.875rem', fontWeight: '600' }}>
+                Selected Shade: <span style={{ color: 'var(--color-primary)' }}>{selectedColor}</span>
               </div>
-              <ColorSwatch
-                colorName={product.color}
-                hexCode={product.colorHex || '#ECEFF1'}
-                isSelected={true}
-                size={38}
-                showLabel={true}
-              />
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>
+                {selectedColorHex}
+              </span>
             </div>
-          )}
+
+            {/* Primary Shade Chips */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
+              {TRENDING_COLORS.map((col) => (
+                <ColorSwatch
+                  key={col.name}
+                  colorName={col.name}
+                  hexCode={col.hex}
+                  isSelected={selectedColor === col.name}
+                  size={34}
+                  showLabel={false}
+                  onClick={() => {
+                    setSelectedColor(col.name);
+                    setSelectedColorHex(col.hex);
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Mixed Color / Feature Wall Accent Matcher */}
+            <div
+              style={{
+                backgroundColor: isMixedColorEnabled ? 'var(--color-primary-subtle)' : '#F8FAFC',
+                border: isMixedColorEnabled ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-btn)',
+                padding: '12px 14px',
+                transition: 'all 0.25s ease',
+              }}
+            >
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={isMixedColorEnabled}
+                  onChange={(e) => setIsMixedColorEnabled(e.target.checked)}
+                  style={{ width: '17px', height: '17px', cursor: 'pointer', accentColor: 'var(--color-primary)' }}
+                />
+                <div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: '700', color: 'var(--color-primary-dark)' }}>
+                    🎨 Custom Mixed Color / Dual-Tone Accent Wall
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+                    Formulate a secondary accent tint for trim, moldings, or feature walls.
+                  </div>
+                </div>
+              </label>
+
+              {isMixedColorEnabled && (
+                <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed var(--color-border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.8125rem', fontWeight: '600' }}>
+                      Accent Shade: <strong>{selectedMixedColor}</strong>
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Dual Mix Preview:</span>
+                      <ColorSwatch
+                        colorName={`${selectedColor} + ${selectedMixedColor}`}
+                        hexCode={selectedColorHex}
+                        secondaryHex={selectedMixedColorHex}
+                        size={28}
+                        isSelected={true}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {TRENDING_COLORS.map((col) => (
+                      <ColorSwatch
+                        key={`mixed-${col.name}`}
+                        colorName={col.name}
+                        hexCode={col.hex}
+                        isSelected={selectedMixedColor === col.name}
+                        size={28}
+                        onClick={() => {
+                          setSelectedMixedColor(col.name);
+                          setSelectedMixedColorHex(col.hex);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Size Selector */}
           <div>
@@ -365,10 +484,11 @@ const ProductDetail = () => {
                 variant="primary"
                 fullWidth
                 size="lg"
+                disabled={isOutOfStock}
                 onClick={handleAddToCart}
                 icon={<RiShoppingBag3Line size={20} />}
               >
-                Add to Cart • {formatPrice(product.price * quantity)}
+                {isOutOfStock ? 'Out of Stock' : `Add to Cart • ${formatPrice(product.price * quantity)}`}
               </Button>
             </div>
 

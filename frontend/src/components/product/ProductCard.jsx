@@ -54,6 +54,9 @@ const ProductCard = ({ product }) => {
 
   const discountVal = product.discount || calculateDiscount(product.mrp, product.price);
 
+  const isOutOfStock = product.stockQuantity === 0 || product.inStock === false;
+  const isLowStock = !isOutOfStock && product.stockQuantity > 0 && product.stockQuantity <= 5;
+
   return (
     <div
       className="product-card hover-lift"
@@ -135,22 +138,48 @@ const ProductCard = ({ product }) => {
           flexDirection: 'column',
           flex: 1,
           justifyContent: 'space-between',
-          gap: '10px',
+          gap: '8px',
         }}
       >
         <div>
-          {/* Paint type & Finish tags */}
+          {/* Paint type, Finish & Stock Status */}
           <div
             style={{
-              fontSize: '0.6875rem',
-              color: 'var(--color-text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               marginBottom: '4px',
             }}
           >
-            {product.paintType || 'Emulsion'} • {product.finish || 'Matte'}
+            <span
+              style={{
+                fontSize: '0.6875rem',
+                color: 'var(--color-text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                fontWeight: '600',
+              }}
+            >
+              {product.paintType || 'Emulsion'} • {product.finish || 'Matte'}
+            </span>
+
+            {/* Availability Status Indicator */}
+            {isOutOfStock ? (
+              <span style={{ fontSize: '0.6875rem', fontWeight: '700', color: '#DC2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#DC2626' }} />
+                Out of Stock
+              </span>
+            ) : isLowStock ? (
+              <span style={{ fontSize: '0.6875rem', fontWeight: '700', color: '#D97706', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#D97706' }} />
+                Only {product.stockQuantity} left
+              </span>
+            ) : (
+              <span style={{ fontSize: '0.6875rem', fontWeight: '700', color: '#16A34A', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#16A34A' }} />
+                In Stock
+              </span>
+            )}
           </div>
 
           {/* Product Name (truncated to 2 lines) */}
@@ -173,6 +202,46 @@ const ProductCard = ({ product }) => {
           >
             {product.name}
           </Link>
+
+          {/* Color shade preview swatches (including dual/mixed shade dot) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
+            <span
+              style={{
+                width: '13px',
+                height: '13px',
+                borderRadius: '50%',
+                backgroundColor: product.colorHex || '#1A237E',
+                border: '1px solid rgba(0,0,0,0.2)',
+                display: 'inline-block',
+              }}
+              title={`Base Shade: ${product.color || 'Royal Navy'}`}
+            />
+            <span
+              style={{
+                width: '13px',
+                height: '13px',
+                borderRadius: '50%',
+                backgroundColor: '#FFD700',
+                border: '1px solid rgba(0,0,0,0.2)',
+                display: 'inline-block',
+              }}
+              title="Accent Shade: Imperial Gold"
+            />
+            <span
+              style={{
+                width: '13px',
+                height: '13px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #1A237E 50%, #FFD700 50%)',
+                border: '1px solid rgba(0,0,0,0.2)',
+                display: 'inline-block',
+              }}
+              title="Mixed Dual-Tone Combination Available"
+            />
+            <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-secondary)', marginLeft: '3px' }}>
+              +10 shades
+            </span>
+          </div>
 
           {/* Star Rating with Count */}
           <div style={{ marginBottom: '8px' }}>
@@ -219,14 +288,15 @@ const ProductCard = ({ product }) => {
         {/* Add to Cart Button */}
         <button
           onClick={handleAddToCart}
-          disabled={isAdding}
+          disabled={isAdding || isOutOfStock}
           aria-label={`Add ${product.name} to cart`}
           style={{
             width: '100%',
             height: '38px',
             borderRadius: 'var(--radius-btn)',
-            backgroundColor: 'var(--color-primary)',
-            color: '#FFFFFF',
+            backgroundColor: isOutOfStock ? '#E2E8F0' : 'var(--color-primary)',
+            color: isOutOfStock ? '#94A3B8' : '#FFFFFF',
+            cursor: isOutOfStock ? 'not-allowed' : 'pointer',
             fontWeight: '600',
             fontSize: '0.875rem',
             display: 'flex',
@@ -236,10 +306,10 @@ const ProductCard = ({ product }) => {
             transition: 'background-color var(--transition-base), color var(--transition-base)',
             marginTop: '4px',
           }}
-          className="add-to-cart-btn"
+          className={isOutOfStock ? '' : 'add-to-cart-btn'}
         >
           <RiShoppingBag3Line size={17} />
-          <span>{isAdding ? 'Adding...' : 'Add to Cart'}</span>
+          <span>{isOutOfStock ? 'Out of Stock' : isAdding ? 'Adding...' : 'Add to Cart'}</span>
         </button>
       </div>
 

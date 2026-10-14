@@ -49,7 +49,7 @@ const ExplorePage = () => {
     const fetchFiltered = async () => {
       setLoading(true);
       try {
-        const data = await productService.getProducts({
+        let data = await productService.getProducts({
           category: debouncedFilters.category,
           paintType: debouncedFilters.paintType,
           finish: debouncedFilters.finish,
@@ -60,6 +60,18 @@ const ExplorePage = () => {
           search: debouncedFilters.search,
           sort: debouncedFilters.sort,
         });
+
+        if (debouncedFilters.inStockOnly) {
+          data = data.filter((p) => p.inStock && p.stockQuantity > 0);
+        }
+
+        if (debouncedFilters.color) {
+          data = data.filter((p) =>
+            (p.color && p.color.toLowerCase().includes(debouncedFilters.color.toLowerCase())) ||
+            (p.colorHex && p.colorHex.toLowerCase() === debouncedFilters.color.toLowerCase())
+          );
+        }
+
         if (isCurrent) {
           setProducts(data);
         }
@@ -90,6 +102,7 @@ const ExplorePage = () => {
       maxPrice: '',
       minRating: '',
       color: '',
+      inStockOnly: false,
       search: '',
       sort: 'featured',
     });
