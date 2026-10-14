@@ -27,8 +27,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     long countByIsApprovedFalse();
 
-    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.product.id = :productId AND r.isApproved = true")
-    BigDecimal calculateAverageRating(@Param("productId") Long productId);
+    @Query("SELECT COALESCE(AVG(CAST(r.rating AS double)), 0.0) FROM Review r WHERE r.product.id = :productId AND r.isApproved = true")
+    Double calculateAverageRating(@Param("productId") Long productId);
 
     @Query("SELECT COUNT(r) FROM Review r WHERE r.product.id = :productId AND r.isApproved = true")
     long countApprovedReviewsByProductId(@Param("productId") Long productId);

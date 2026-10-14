@@ -18,27 +18,44 @@ const cartService = {
   async getCart() {
     try {
       const response = await api.get('/cart');
-      if (response.data) {
-        saveStoredCart(response.data);
-        return response.data;
+      const data = response.data?.data || response.data;
+      if (data && data.items) {
+        saveStoredCart(data);
+        return data;
       }
-    } catch {
-      // Local fallback
-    }
+    } catch {}
     return getStoredCart();
   },
 
   async addItem(product, quantity = 1, selectedSize = '4 Litres', selectedFinish = 'Matte') {
+    // If authenticated, sync with backend to get authentic DB ID
+    try {
+      const response = await api.post('/cart/items', {
+        productId: product.id,
+        quantity,
+        size: selectedSize,
+        finish: selectedFinish,
+      });
+      const data = response.data?.data || response.data;
+      if (data && data.items) {
+        saveStoredCart(data);
+        return data;
+      }
+    } catch (err) {
+      if (err.status) throw err;
+    }
+
+    // Unauthenticated guest local storage
     const current = getStoredCart();
     const existingIndex = current.items.findIndex(
-      (item) => item.product.id === product.id && item.size === selectedSize && item.finish === selectedFinish
+      (item) => item.product?.id === product.id && item.size === selectedSize && item.finish === selectedFinish
     );
 
     if (existingIndex > -1) {
       current.items[existingIndex].quantity += quantity;
     } else {
       current.items.push({
-        id: `cart-item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        id: `guest-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         product,
         size: selectedSize,
         finish: selectedFinish,
@@ -48,19 +65,8 @@ const cartService = {
     }
 
     current.totalItems = current.items.reduce((sum, item) => sum + item.quantity, 0);
-    current.totalAmount = current.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    current.totalAmount = current.items.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
     saveStoredCart(current);
-
-    try {
-      await api.post('/cart/items', {
-        productId: product.id,
-        quantity,
-        size: selectedSize,
-        finish: selectedFinish,
-      });
-    } catch (err) {
-      // Offline / fallback handled
-    }
 
     return current;
   },
@@ -77,12 +83,20 @@ const cartService = {
     }
 
     current.totalItems = current.items.reduce((sum, item) => sum + item.quantity, 0);
-    current.totalAmount = current.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    current.totalAmount = current.items.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
     saveStoredCart(current);
 
-    try {
-      await api.put(`/cart/items/${itemId}`, { quantity });
-    } catch (err) {}
+    // If server ID, sync with backend
+    if (typeof itemId === 'number' || (!String(itemId).startsWith('guest-') && !String(itemId).startsWith('cart-item-'))) {
+      try {
+        const response = await api.put(`/cart/items/${itemId}?quantity=${quantity}`);
+        const data = response.data?.data || response.data;
+        if (data && data.items) {
+          saveStoredCart(data);
+          return data;
+        }
+      } catch {}
+    }
 
     return current;
   },
@@ -91,12 +105,20 @@ const cartService = {
     const current = getStoredCart();
     current.items = current.items.filter((i) => i.id !== itemId);
     current.totalItems = current.items.reduce((sum, item) => sum + item.quantity, 0);
-    current.totalAmount = current.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    current.totalAmount = current.items.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
     saveStoredCart(current);
 
-    try {
-      await api.delete(`/cart/items/${itemId}`);
-    } catch (err) {}
+    // If server ID, sync with backend
+    if (typeof itemId === 'number' || (!String(itemId).startsWith('guest-') && !String(itemId).startsWith('cart-item-'))) {
+      try {
+        const response = await api.delete(`/cart/items/${itemId}`);
+        const data = response.data?.data || response.data;
+        if (data && data.items) {
+          saveStoredCart(data);
+          return data;
+        }
+      } catch {}
+    }
 
     return current;
   },
@@ -107,7 +129,7 @@ const cartService = {
 
     try {
       await api.delete('/cart');
-    } catch (err) {}
+    } catch {}
 
     return empty;
   },

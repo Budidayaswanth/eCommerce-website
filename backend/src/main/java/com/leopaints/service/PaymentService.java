@@ -13,6 +13,7 @@ import com.leopaints.enums.PaymentStatus;
 import com.leopaints.exception.BadRequestException;
 import com.leopaints.exception.PaymentException;
 import com.leopaints.exception.ResourceNotFoundException;
+import com.leopaints.exception.UnauthorizedException;
 import com.leopaints.repository.OrderRepository;
 import com.leopaints.repository.PaymentRepository;
 import com.leopaints.repository.ProductRepository;
@@ -56,10 +57,22 @@ public class PaymentService {
     @Value("${app.cashfree.base-url:https://sandbox.cashfree.com/pg}")
     private String cashfreeBaseUrl;
 
+    @Value("${app.cashfree.mock-enabled:false}")
+    private boolean mockCashfreeEnabled;
+
     @Transactional
     public PaymentSessionResponse createPaymentSession(Long orderId) {
+        return createPaymentSession(orderId, null, true);
+    }
+
+    @Transactional
+    public PaymentSessionResponse createPaymentSession(Long orderId, Long userId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (!isAdmin && userId != null && order.getUser() != null && !order.getUser().getId().equals(userId)) {
+            throw new UnauthorizedException("Not authorized to create payment session for this order");
+        }
 
         if (order.getStatus() == OrderStatus.CANCELLED || order.getStatus() == OrderStatus.DELIVERED) {
             throw new BadRequestException("Cannot create payment session for order in status: " + order.getStatus());
@@ -147,8 +160,17 @@ public class PaymentService {
 
     @Transactional
     public PaymentResponse verifyPayment(Long orderId, String cfOrderId) {
+        return verifyPayment(orderId, cfOrderId, null, true);
+    }
+
+    @Transactional
+    public PaymentResponse verifyPayment(Long orderId, String cfOrderId, Long userId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (!isAdmin && userId != null && order.getUser() != null && !order.getUser().getId().equals(userId)) {
+            throw new UnauthorizedException("Not authorized to verify payment for this order");
+        }
 
         Payment payment = paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment record not found for order id: " + orderId));
@@ -157,8 +179,7 @@ public class PaymentService {
             return toPaymentResponse(payment);
         }
 
-        // Check if Cashfree configured or simulate successful verification
-        boolean verifiedSuccess = true;
+        boolean verifiedSuccess = false;
         String paymentId = "pay_" + UUID.randomUUID().toString().substring(0, 8);
         String paymentMethod = "UPI";
 
@@ -187,8 +208,15 @@ public class PaymentService {
                     verifiedSuccess = "SUCCESS".equalsIgnoreCase(status);
                 }
             } catch (Exception e) {
-                log.warn("Cashfree status verification error, defaulting to mock success: {}", e.getMessage());
+                log.error("Cashfree status verification error: {}", e.getMessage());
+                verifiedSuccess = false;
             }
+        } else if (mockCashfreeEnabled) {
+            log.info("Mock Cashfree verification enabled for dev environment");
+            verifiedSuccess = true;
+        } else {
+            log.warn("Cashfree gateway credentials not configured. Verification rejected in production mode.");
+            verifiedSuccess = false;
         }
 
         if (verifiedSuccess) {
@@ -215,12 +243,15 @@ public class PaymentService {
     public void handleWebhook(String payload, String signature, String timestamp) {
         log.info("Received Cashfree webhook: timestamp={}", timestamp);
 
-        if (cashfreeSecretKey != null && !cashfreeSecretKey.trim().isEmpty()) {
-            boolean valid = cashfreeUtil.verifyWebhookSignature(payload, signature, timestamp, cashfreeSecretKey);
-            if (!valid) {
-                log.warn("Invalid Cashfree webhook signature!");
-                throw new PaymentException("Invalid webhook signature");
-            }
+        if (cashfreeSecretKey == null || cashfreeSecretKey.trim().isEmpty()) {
+            log.error("Rejecting Cashfree webhook: secret key is not configured");
+            throw new PaymentException("Cashfree payment gateway webhook is unconfigured");
+        }
+
+        boolean valid = cashfreeUtil.verifyWebhookSignature(payload, signature, timestamp, cashfreeSecretKey);
+        if (!valid) {
+            log.warn("Invalid Cashfree webhook signature!");
+            throw new PaymentException("Invalid webhook signature");
         }
 
         try {

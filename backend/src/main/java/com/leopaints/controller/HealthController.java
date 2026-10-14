@@ -48,9 +48,8 @@ public class HealthController {
         } catch (Exception e) {
             log.error("Database health check failed: {}", e.getMessage());
             dbConnected = false;
-            dbMessage = "Database connection failed: " + e.getMessage();
+            dbMessage = "Database service is temporarily unavailable";
             healthData.put("dbStatus", "DOWN");
-            healthData.put("dbError", e.getMessage());
         }
 
         healthData.put("isHealthy", dbConnected);

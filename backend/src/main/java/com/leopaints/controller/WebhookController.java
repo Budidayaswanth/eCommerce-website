@@ -23,8 +23,8 @@ public class WebhookController {
     @Operation(summary = "Cashfree payment gateway webhook endpoint")
     public ResponseEntity<Map<String, String>> handleCashfreeWebhook(
             @RequestBody String payload,
-            @RequestHeader(value = "x-webhook-signature", required = false) String signature,
-            @RequestHeader(value = "x-webhook-timestamp", required = false) String timestamp
+            @RequestHeader(value = "x-webhook-signature") String signature,
+            @RequestHeader(value = "x-webhook-timestamp") String timestamp
     ) {
         log.info("Received Cashfree webhook: timestamp={}", timestamp);
         paymentService.handleWebhook(payload, signature, timestamp);

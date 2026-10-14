@@ -37,9 +37,12 @@ public class ChatController {
     @GetMapping("/messages/{sessionId}")
     @Operation(summary = "Get conversation history for a chat session")
     public ResponseEntity<ApiResponse<List<ChatMessageResponse>>> getSessionMessages(
-            @PathVariable String sessionId
+            @PathVariable String sessionId,
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
-        List<ChatMessageResponse> response = chatService.getSessionMessages(sessionId);
+        Long userId = principal != null ? principal.getId() : null;
+        boolean isAdmin = principal != null && principal.getRole() == com.leopaints.enums.UserRole.ADMIN;
+        List<ChatMessageResponse> response = chatService.getSessionMessages(sessionId, userId, isAdmin);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

@@ -31,19 +31,24 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
 
   const [address, setAddress] = useState({
-    name: user?.name || 'Yaswanth Kumar',
-    phone: user?.phone || '9876543210',
-    street: 'Flat 402, Royal Palms, Road No. 12, Banjara Hills',
-    city: 'Hyderabad',
-    state: 'Telangana',
-    pincode: '500034',
+    name: user?.name || '',
+    phone: user?.phone || '',
+    street: '',
+    city: '',
+    state: '',
+    pincode: '',
   });
 
   const [paymentMethod, setPaymentMethod] = useState('UPI');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (items.length === 0) {
+      navigate('/cart');
+    }
+  }, [items.length, navigate]);
+
   if (items.length === 0) {
-    navigate('/cart');
     return null;
   }
 

@@ -6,6 +6,7 @@ import com.leopaints.entity.Coupon;
 import com.leopaints.entity.Order;
 import com.leopaints.entity.User;
 import com.leopaints.enums.MessageSender;
+import com.leopaints.exception.UnauthorizedException;
 import com.leopaints.mapper.ChatMessageMapper;
 import com.leopaints.repository.ChatMessageRepository;
 import com.leopaints.repository.CouponRepository;
@@ -81,7 +82,20 @@ public class ChatService {
 
     @Transactional(readOnly = true)
     public List<ChatMessageResponse> getSessionMessages(String sessionId) {
-        return chatMessageRepository.findBySessionIdOrderBySentAtAsc(sessionId).stream()
+        return getSessionMessages(sessionId, null, true);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatMessageResponse> getSessionMessages(String sessionId, Long currentUserId, boolean isAdmin) {
+        List<ChatMessage> messages = chatMessageRepository.findBySessionIdOrderBySentAtAsc(sessionId);
+        if (!isAdmin && currentUserId != null) {
+            boolean hasOtherUser = messages.stream()
+                    .anyMatch(m -> m.getUser() != null && !m.getUser().getId().equals(currentUserId));
+            if (hasOtherUser) {
+                throw new UnauthorizedException("Not authorized to view this chat session");
+            }
+        }
+        return messages.stream()
                 .map(chatMessageMapper::toResponse)
                 .toList();
     }

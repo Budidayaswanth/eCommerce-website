@@ -109,21 +109,16 @@ public class CouponService {
     @Transactional
     public void applyCoupon(String code) {
         if (code == null || code.trim().isEmpty()) return;
-        couponRepository.findByCodeIgnoreCase(code.trim()).ifPresent(coupon -> {
-            coupon.setUsedCount(coupon.getUsedCount() + 1);
-            couponRepository.save(coupon);
-        });
+        int updated = couponRepository.incrementUsageIfUnderLimit(code.trim());
+        if (updated == 0) {
+            log.warn("Coupon {} could not be applied: limit reached or coupon inactive", code);
+        }
     }
 
     @Transactional
     public void rollbackCoupon(String code) {
         if (code == null || code.trim().isEmpty()) return;
-        couponRepository.findByCodeIgnoreCase(code.trim()).ifPresent(coupon -> {
-            if (coupon.getUsedCount() > 0) {
-                coupon.setUsedCount(coupon.getUsedCount() - 1);
-                couponRepository.save(coupon);
-            }
-        });
+        couponRepository.decrementUsage(code.trim());
     }
 
     @Transactional(readOnly = true)

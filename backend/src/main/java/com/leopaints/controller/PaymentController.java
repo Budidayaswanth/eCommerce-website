@@ -29,19 +29,25 @@ public class PaymentController {
     @PostMapping("/create-session")
     @Operation(summary = "Create Cashfree payment session for an order")
     public ResponseEntity<ApiResponse<PaymentSessionResponse>> createPaymentSession(
-            @RequestBody Map<String, Long> request
+            @RequestBody Map<String, Long> request,
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
         Long orderId = request.get("orderId");
-        PaymentSessionResponse response = paymentService.createPaymentSession(orderId);
+        Long userId = principal != null ? principal.getId() : null;
+        boolean isAdmin = principal != null && principal.getRole() == com.leopaints.enums.UserRole.ADMIN;
+        PaymentSessionResponse response = paymentService.createPaymentSession(orderId, userId, isAdmin);
         return ResponseEntity.ok(ApiResponse.success(response, "Payment session created"));
     }
 
     @PostMapping("/verify")
     @Operation(summary = "Verify payment status with Cashfree")
     public ResponseEntity<ApiResponse<PaymentResponse>> verifyPayment(
-            @Valid @RequestBody PaymentVerifyRequest request
+            @Valid @RequestBody PaymentVerifyRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
-        PaymentResponse response = paymentService.verifyPayment(request.getOrderId(), request.getCfOrderId());
+        Long userId = principal != null ? principal.getId() : null;
+        boolean isAdmin = principal != null && principal.getRole() == com.leopaints.enums.UserRole.ADMIN;
+        PaymentResponse response = paymentService.verifyPayment(request.getOrderId(), request.getCfOrderId(), userId, isAdmin);
         return ResponseEntity.ok(ApiResponse.success(response, "Payment verified"));
     }
 

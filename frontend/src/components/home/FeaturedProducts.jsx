@@ -17,8 +17,8 @@ const FeaturedProducts = () => {
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const data = await productService.getProducts();
-        setProducts(data.filter((p) => p.featured || p.rating >= 4.7));
+        const data = await productService.getFeaturedProducts();
+        setProducts(Array.isArray(data) ? data : []);
       } catch (err) {
         setProducts([]);
       } finally {

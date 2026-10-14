@@ -33,11 +33,23 @@ const CouponManager = () => {
     fetchCoupons();
   }, []);
 
-  const handleToggle = (id) => {
-    setCoupons(
-      coupons.map((c) => (c.id === id ? { ...c, active: !c.active } : c))
-    );
-    toast.success('Coupon status toggled');
+  const handleToggle = async (id) => {
+    const target = coupons.find((c) => c.id === id);
+    if (!target) return;
+    const updatedStatus = !(target.active ?? target.isActive);
+    try {
+      await adminService.saveCoupon({
+        ...target,
+        isActive: updatedStatus,
+        active: updatedStatus,
+      });
+      setCoupons(
+        coupons.map((c) => (c.id === id ? { ...c, active: updatedStatus, isActive: updatedStatus } : c))
+      );
+      toast.success(`Coupon ${updatedStatus ? 'activated' : 'deactivated'}`);
+    } catch {
+      toast.error('Failed to update coupon status');
+    }
   };
 
   const handleCreateCoupon = async (e) => {

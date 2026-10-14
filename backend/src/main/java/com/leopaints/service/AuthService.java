@@ -44,6 +44,9 @@ public class AuthService {
     @Value("${app.otp.max-attempts:5}")
     private int maxOtpAttempts;
 
+    @Value("${app.otp.mock-enabled:false}")
+    private boolean mockOtpEnabled;
+
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Transactional
@@ -57,8 +60,9 @@ public class AuthService {
         int otpCode = 100000 + secureRandom.nextInt(900000);
         String otp = String.valueOf(otpCode);
 
-        // For demo/dev logging
-        log.info("========== DEMO OTP for {}: {} (Default demo code: 123456) ==========", phone, otp);
+        // Mask phone for audit safety
+        String maskedPhone = phone.length() >= 4 ? "******" + phone.substring(phone.length() - 4) : "******";
+        log.info("Generated and dispatched secure OTP for phone {}", maskedPhone);
 
         String otpHash = passwordEncoder.encode(otp);
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(otpExpiryMinutes);
@@ -120,8 +124,9 @@ public class AuthService {
 
         latestOtp.setAttemptCount(latestOtp.getAttemptCount() + 1);
 
-        // Accept demo "123456" or actual hash match
-        boolean isValid = "123456".equals(submittedOtp) || passwordEncoder.matches(submittedOtp, latestOtp.getOtpHash());
+        // Match cryptographic hash, or allow mock 123456 ONLY if explicitly enabled for dev/testing
+        boolean isValid = passwordEncoder.matches(submittedOtp, latestOtp.getOtpHash())
+                || (mockOtpEnabled && "123456".equals(submittedOtp));
         if (!isValid) {
             otpVerificationRepository.save(latestOtp);
             throw new BadRequestException("Invalid OTP. Remaining attempts: " + (maxOtpAttempts - latestOtp.getAttemptCount()));
@@ -189,6 +194,11 @@ public class AuthService {
     public AuthResponse refreshToken(String refreshToken) {
         if (!jwtUtil.validateToken(refreshToken)) {
             throw new UnauthorizedException("Invalid or expired refresh token");
+        }
+
+        String tokenType = jwtUtil.getTokenTypeFromToken(refreshToken);
+        if (tokenType != null && !"REFRESH".equals(tokenType)) {
+            throw new UnauthorizedException("Invalid token type. Expected REFRESH token.");
         }
 
         Long userId = jwtUtil.getUserIdFromToken(refreshToken);

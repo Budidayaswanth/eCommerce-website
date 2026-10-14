@@ -177,6 +177,16 @@ public class ProductService {
             throw new BadRequestException("Uploaded image cannot be empty");
         }
 
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
+        }
+
+        if (!List.of(".jpg", ".jpeg", ".png", ".webp", ".avif").contains(extension)) {
+            throw new BadRequestException("Invalid image format. Allowed formats: JPG, PNG, WEBP, AVIF");
+        }
+
         try {
             if (cloudinaryCloudName != null && !cloudinaryCloudName.trim().isEmpty()) {
                 @SuppressWarnings("unchecked")
@@ -192,7 +202,7 @@ public class ProductService {
                 if (!Files.exists(uploadPath)) {
                     Files.createDirectories(uploadPath);
                 }
-                String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+                String filename = UUID.randomUUID() + extension;
                 Path filePath = uploadPath.resolve(filename);
                 Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
                 return "/uploads/products/" + filename;

@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableAsync
 @EnableScheduling
+@EnableJpaAuditing
 public class LeoPaintsApplication {
 
     public static void main(String[] args) {

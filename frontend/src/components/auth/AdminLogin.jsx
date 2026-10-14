@@ -9,8 +9,8 @@ const AdminLogin = () => {
   const { adminLogin } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('admin@leopaints.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -130,21 +130,23 @@ const AdminLogin = () => {
             required
           />
 
-          <div
-            style={{
-              backgroundColor: 'var(--color-primary-subtle)',
-              padding: '10px 12px',
-              borderRadius: 'var(--radius-btn)',
-              fontSize: '0.75rem',
-              color: 'var(--color-primary-dark)',
-            }}
-          >
-            <strong>Demo Credentials:</strong>
-            <br />
-            Email: <code>admin@leopaints.com</code>
-            <br />
-            Password: <code>admin123</code>
-          </div>
+          {import.meta.env.DEV && (
+            <div
+              style={{
+                backgroundColor: 'var(--color-primary-subtle)',
+                padding: '10px 12px',
+                borderRadius: 'var(--radius-btn)',
+                fontSize: '0.75rem',
+                color: 'var(--color-primary-dark)',
+              }}
+            >
+              <strong>Local Dev Credentials:</strong>
+              <br />
+              Email: <code>admin@leopaints.com</code>
+              <br />
+              Password: <code>Admin@123</code>
+            </div>
+          )}
 
           <Button
             type="submit"

@@ -127,9 +127,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneralException(Exception ex) {
-        log.error("Unhandled exception: ", ex);
+        log.error("Unhandled internal server exception: ", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Internal server error: " + ex.getMessage(), "SERVER_ERROR"));
+                .body(ApiResponse.error("An internal server error occurred. Please try again later.", "SERVER_ERROR"));
     }
 }

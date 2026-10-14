@@ -33,24 +33,40 @@ const BannerManager = () => {
     fetchBanners();
   }, []);
 
-  const moveUp = (index) => {
+  const moveUp = async (index) => {
     if (index === 0) return;
     const newBanners = [...banners];
     const temp = newBanners[index];
     newBanners[index] = newBanners[index - 1];
     newBanners[index - 1] = temp;
     setBanners(newBanners);
-    toast.success('Banner order updated');
+    try {
+      await Promise.all([
+        adminService.saveBanner({ ...newBanners[index], priority: index + 1 }),
+        adminService.saveBanner({ ...newBanners[index - 1], priority: index }),
+      ]);
+      toast.success('Banner order updated and saved');
+    } catch {
+      toast.error('Failed to save banner order');
+    }
   };
 
-  const moveDown = (index) => {
+  const moveDown = async (index) => {
     if (index === banners.length - 1) return;
     const newBanners = [...banners];
     const temp = newBanners[index];
     newBanners[index] = newBanners[index + 1];
     newBanners[index + 1] = temp;
     setBanners(newBanners);
-    toast.success('Banner order updated');
+    try {
+      await Promise.all([
+        adminService.saveBanner({ ...newBanners[index], priority: index + 1 }),
+        adminService.saveBanner({ ...newBanners[index + 1], priority: index + 2 }),
+      ]);
+      toast.success('Banner order updated and saved');
+    } catch {
+      toast.error('Failed to save banner order');
+    }
   };
 
   const handleDelete = async (id) => {

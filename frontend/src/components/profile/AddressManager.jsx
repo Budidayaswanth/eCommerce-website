@@ -5,21 +5,8 @@ import { validateRequired, validatePincode, validatePhone } from '../../utils/va
 import { RiMapPinLine, RiAddLine, RiDeleteBinLine, RiCheckLine } from 'react-icons/ri';
 import toast from 'react-hot-toast';
 
-const INITIAL_ADDRESSES = [
-  {
-    id: 'addr-1',
-    name: 'Yaswanth Kumar',
-    phone: '9876543210',
-    street: 'Flat 402, Royal Palms, Road No. 12, Banjara Hills',
-    city: 'Hyderabad',
-    state: 'Telangana',
-    pincode: '500034',
-    isDefault: true,
-  },
-];
-
 const AddressManager = () => {
-  const [addresses, setAddresses] = useState(INITIAL_ADDRESSES);
+  const [addresses, setAddresses] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
 
   const [name, setName] = useState('');

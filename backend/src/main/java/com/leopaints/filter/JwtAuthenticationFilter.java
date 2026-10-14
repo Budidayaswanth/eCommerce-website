@@ -35,6 +35,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = extractJwtFromRequest(request);
 
             if (StringUtils.hasText(jwt) && jwtUtil.validateToken(jwt)) {
+                String tokenType = jwtUtil.getTokenTypeFromToken(jwt);
+                if (tokenType != null && !"ACCESS".equals(tokenType)) {
+                    log.warn("Rejected non-access token presented in Authorization header");
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 Long userId = jwtUtil.getUserIdFromToken(jwt);
                 UserRole role = jwtUtil.getRoleFromToken(jwt);
 

@@ -29,11 +29,13 @@ app:
   otp:
     expiry-minutes: 5
     max-attempts: 5
+    mock-enabled: ${MOCK_OTP_ENABLED:false}
   cashfree:
     app-id: ${CASHFREE_APP_ID:}
     secret-key: ${CASHFREE_SECRET_KEY:}
     api-version: "2023-08-01"
     base-url: ${CASHFREE_BASE_URL:https://sandbox.cashfree.com/pg}
+    mock-enabled: ${MOCK_CASHFREE_ENABLED:false}
   cloudinary:
     cloud-name: ${CLOUDINARY_CLOUD_NAME:}
     api-key: ${CLOUDINARY_API_KEY:}

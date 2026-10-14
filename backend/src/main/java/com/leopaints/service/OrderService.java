@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Service
@@ -263,7 +264,7 @@ public class OrderService {
 
     private String generateOrderNumber() {
         String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        int randomCode = ThreadLocalRandom.current().nextInt(1000, 9999);
-        return "LEO-" + dateStr + "-" + randomCode;
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        return "LEO-" + dateStr + "-" + suffix;
     }
 }

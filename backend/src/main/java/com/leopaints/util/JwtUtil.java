@@ -90,6 +90,15 @@ public class JwtUtil {
         return roleStr != null ? UserRole.valueOf(roleStr) : UserRole.USER;
     }
 
+    public String getTokenTypeFromToken(String token) {
+        try {
+            Claims claims = getClaims(token);
+            return claims.get("tokenType", String.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public boolean isTokenExpired(String token) {
         try {
             Claims claims = getClaims(token);

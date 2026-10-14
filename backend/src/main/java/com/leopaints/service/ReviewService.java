@@ -85,10 +85,10 @@ public class ReviewService {
 
         // Update product average rating & count
         Product product = review.getProduct();
-        BigDecimal avgRating = reviewRepository.calculateAverageRating(product.getId());
+        Double avgRating = reviewRepository.calculateAverageRating(product.getId());
         long approvedCount = reviewRepository.countApprovedReviewsByProductId(product.getId());
 
-        product.setAvgRating(avgRating != null ? avgRating.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
+        product.setAvgRating(avgRating != null ? BigDecimal.valueOf(avgRating).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
         product.setReviewCount((int) approvedCount);
         productRepository.save(product);
 
@@ -105,10 +105,10 @@ public class ReviewService {
         reviewRepository.delete(review);
 
         // Recalculate average rating & count
-        BigDecimal avgRating = reviewRepository.calculateAverageRating(product.getId());
+        Double avgRating = reviewRepository.calculateAverageRating(product.getId());
         long approvedCount = reviewRepository.countApprovedReviewsByProductId(product.getId());
 
-        product.setAvgRating(avgRating != null ? avgRating.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
+        product.setAvgRating(avgRating != null ? BigDecimal.valueOf(avgRating).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
         product.setReviewCount((int) approvedCount);
         productRepository.save(product);
 

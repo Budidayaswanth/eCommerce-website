@@ -24,12 +24,13 @@ const AuditLogViewer = () => {
     fetchLogs();
   }, []);
 
+  const searchLower = (debouncedSearch || '').toLowerCase();
   const filtered = logs.filter(
     (l) =>
-      l.action.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      l.entity.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      l.performedBy.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      l.details.toLowerCase().includes(debouncedSearch.toLowerCase())
+      (l.action || '').toLowerCase().includes(searchLower) ||
+      (l.entity || '').toLowerCase().includes(searchLower) ||
+      (l.performedBy || '').toLowerCase().includes(searchLower) ||
+      (l.details || '').toLowerCase().includes(searchLower)
   );
 
   return (

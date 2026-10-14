@@ -17,6 +17,7 @@ import com.leopaints.repository.OtpVerificationRepository;
 import com.leopaints.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +40,9 @@ public class UserService {
     private final AddressMapper addressMapper;
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;
+
+    @Value("${app.otp.mock-enabled:false}")
+    private boolean mockOtpEnabled;
 
     @Transactional(readOnly = true)
     public UserResponse getUserProfile(Long userId) {
@@ -82,7 +86,8 @@ public class UserService {
                 throw new BadRequestException("OTP expired");
             }
 
-            boolean isValid = "123456".equals(request.getOtp()) || passwordEncoder.matches(request.getOtp(), otpVerification.getOtpHash());
+            boolean isValid = passwordEncoder.matches(request.getOtp(), otpVerification.getOtpHash())
+                    || (mockOtpEnabled && "123456".equals(request.getOtp()));
             if (!isValid) {
                 throw new BadRequestException("Invalid OTP for phone change");
             }

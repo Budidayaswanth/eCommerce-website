@@ -32,6 +32,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT COUNT(o) FROM Order o WHERE o.placedAt >= :startOfDay")
     long countOrdersToday(@Param("startOfDay") LocalDateTime startOfDay);
 
-    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status NOT IN ('CANCELLED', 'RETURNED')")
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status NOT IN (com.leopaints.enums.OrderStatus.CANCELLED, com.leopaints.enums.OrderStatus.RETURNED)")
     BigDecimal calculateTotalRevenue();
 }

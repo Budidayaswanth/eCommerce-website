@@ -31,7 +31,7 @@ const ReviewManager = () => {
   };
 
   const handleReject = async (id) => {
-    await adminService.approveReview(id, false);
+    await adminService.rejectReview(id);
     setPendingReviews(pendingReviews.filter((r) => r.id !== id));
     toast.success('Review rejected');
   };
