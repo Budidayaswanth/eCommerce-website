@@ -176,3 +176,11 @@ ul, ol {
   transform: translateY(-4px);
   box-shadow: var(--shadow-card-hover);
 }
+
+/* Responsive Content Padding to accommodate Mobile Bottom Nav */
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 16px 12px calc(var(--bottom-nav-height) + 32px) 12px !important;
+  }
+}
+

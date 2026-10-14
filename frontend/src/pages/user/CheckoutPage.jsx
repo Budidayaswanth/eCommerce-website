@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
@@ -75,7 +75,7 @@ const CheckoutPage = () => {
       const createdOrder = await orderService.createOrder(orderPayload);
 
       // Create & Verify payment session
-      await paymentService.createPaymentSession({
+      const session = await paymentService.createPaymentSession({
         orderId: createdOrder.id,
         amount: finalAmount,
       });
@@ -83,6 +83,7 @@ const CheckoutPage = () => {
       await paymentService.verifyPayment({
         orderId: createdOrder.id,
         paymentMethod,
+        cfOrderId: session?.cfOrderId,
       });
 
       await clearCart();

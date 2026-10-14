@@ -56,6 +56,8 @@ public class SecurityConfig {
                                 "/api/health/**",
                                 "/api/banners/**",
                                 "/api/webhooks/**",
+                                "/api/chat/**",
+                                "/api/coupons/validate",
                                 "/ws/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
@@ -73,9 +75,7 @@ public class SecurityConfig {
                                 "/api/wishlist/**",
                                 "/api/reviews/**",
                                 "/api/profile/**",
-                                "/api/payments/**",
-                                "/api/coupons/validate",
-                                "/api/chat/**"
+                                "/api/payments/**"
                         ).authenticated()
                         // Any other request
                         .anyRequest().authenticated()

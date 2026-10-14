@@ -60,6 +60,9 @@ public class PaymentService {
     @Value("${app.cashfree.mock-enabled:false}")
     private boolean mockCashfreeEnabled;
 
+    @Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;
+
     @Transactional
     public PaymentSessionResponse createPaymentSession(Long orderId) {
         return createPaymentSession(orderId, null, true);
@@ -133,13 +136,18 @@ public class PaymentService {
                 .build();
 
         Map<String, Object> customerDetails = new HashMap<>();
-        customerDetails.put("customer_id", "cust_" + order.getUser().getId());
-        customerDetails.put("customer_name", order.getUser().getName());
-        customerDetails.put("customer_email", order.getUser().getEmail() != null ? order.getUser().getEmail() : "customer@leopaints.com");
-        customerDetails.put("customer_phone", order.getUser().getPhone());
+        String customerId = order.getUser() != null ? "cust_" + order.getUser().getId() : "cust_" + order.getId();
+        String customerName = order.getUser() != null && order.getUser().getName() != null ? order.getUser().getName() : "Valued Customer";
+        String customerEmail = order.getUser() != null && order.getUser().getEmail() != null ? order.getUser().getEmail() : "customer@leopaints.com";
+        String customerPhone = order.getUser() != null && order.getUser().getPhone() != null ? order.getUser().getPhone() : "9999999999";
+
+        customerDetails.put("customer_id", customerId);
+        customerDetails.put("customer_name", customerName);
+        customerDetails.put("customer_email", customerEmail);
+        customerDetails.put("customer_phone", customerPhone);
 
         Map<String, Object> orderMeta = new HashMap<>();
-        orderMeta.put("return_url", "http://localhost:5173/orders/" + order.getId() + "/status?cf_order_id={order_id}");
+        orderMeta.put("return_url", frontendUrl + "/payment/status?orderId=" + order.getId() + "&cf_order_id={order_id}");
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("order_id", cfOrderId);
