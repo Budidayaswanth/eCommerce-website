@@ -6,7 +6,7 @@ import { RiCheckboxCircleFill, RiCloseCircleFill, RiTimeFill, RiShoppingBag3Line
 
 const PaymentStatusPage = () => {
   const [searchParams] = useSearchParams();
-  const orderId = searchParams.get('orderId') || 'ORD-984210';
+  const orderId = searchParams.get('orderId') || '';
   const status = (searchParams.get('status') || 'success').toLowerCase();
 
   const isSuccess = status === 'success';
@@ -48,17 +48,17 @@ const PaymentStatusPage = () => {
         <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-secondary)', lineHeight: 1.6, marginBottom: '24px' }}>
           {isSuccess && (
             <>
-              Thank you for trusting <strong>LEO PAINTS</strong>. Your paint formulation order <strong>#{orderId}</strong> has been logged in our dispatch pipeline.
+              Thank you for trusting <strong>LEO PAINTS</strong>. Your paint formulation order {orderId ? <strong>#{orderId}</strong> : 'your order'} has been logged in our dispatch pipeline.
             </>
           )}
           {isPending && (
             <>
-              Your bank transaction is being verified for order <strong>#{orderId}</strong>. We will notify you via SMS once cleared.
+              Your bank transaction is being verified {orderId ? <>for order <strong>#{orderId}</strong></> : 'for your order'}. We will notify you via SMS once cleared.
             </>
           )}
           {!isSuccess && !isPending && (
             <>
-              Your payment for order <strong>#{orderId}</strong> was declined or timed out. Any deducted funds will be refunded within 48 hours.
+              Your payment {orderId ? <>for order <strong>#{orderId}</strong></> : ''} was declined or timed out. Any deducted funds will be refunded within 48 hours.
             </>
           )}
         </p>
